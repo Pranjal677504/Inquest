@@ -99,7 +99,7 @@ P(h \mid e) \propto P(e \mid h)P(h)
 Probe selection aims to maximize:
 
 ```math
-\operatorname{EIG}(q)
+\mathrm{EIG}(q)
 = \mathcal{H}(H)
 - \mathbb{E}_{o \sim P(o \mid q)}
   [\mathcal{H}(H \mid o,q)]
