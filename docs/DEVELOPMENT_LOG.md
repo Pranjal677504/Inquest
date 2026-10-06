@@ -10,6 +10,12 @@ Verification: checked all local Markdown links and reviewed the initial file lis
 
 Next milestone: integrate deterministic incident bundles and their tests.
 
+## 2026-10-06 — README technical expansion
+
+Expanded the foundation README at the maintainer's request. It now explains the investigation problem, architecture, Bayesian reasoning, initial service graph, incident categories, tools, agent comparisons, evaluation contract, reproduction requirements, and validity limits. Details are grounded in the existing local prototype and marked as intended integration where they are not yet present in this branch. The roadmap remains at the foundation milestone.
+
+Verification: checked documentation links, Mermaid source, the illustrative JSON report, and the documented topology and tool names against the prototype. Runnable setup and measured results remain pending their implementation milestones.
+
 ## Entry format
 
 For each completed development session, record the actual local date, milestone, origin of reused code, behavior added or fixed, verification command and outcome, limitations, and next step. A skipped or blocked run does not become a completed milestone.
