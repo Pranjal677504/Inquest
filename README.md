@@ -6,9 +6,9 @@ InquestBench is a research and engineering project for evaluating how agents inv
 
 An agent receives an incident and a limited investigation budget. It queries telemetry, distinguishes a root cause from its downstream symptoms, and submits a diagnosis with a proposed fix, supporting observations, and confidence.
 
-[Architecture](#architecture) · [Benchmark design](#benchmark-design) · [Agents](#agent-comparisons) · [Evaluation](#evaluation-protocol) · [Roadmap](docs/ROADMAP.md) · [Development log](docs/DEVELOPMENT_LOG.md)
+[Architecture](#architecture) · [Benchmark design](#benchmark-design) · [Frozen sets](datasets/README.md) · [Agents](#agent-comparisons) · [Evaluation](#evaluation-protocol) · [Roadmap](docs/ROADMAP.md) · [Development log](docs/DEVELOPMENT_LOG.md)
 
-> **Development preview:** The service topology and deterministic incident generator are implemented, with a runnable example and tests. Investigation tools, grading, agents, and evaluation are being integrated incrementally from an existing local Inquest prototype. Those sections below describe the intended implementation; no end-to-end agent results are published yet.
+> **Development preview:** The service topology, incident generator, and checksum-verified frozen incident loading are implemented, with runnable examples and tests. Nine frozen sets containing 120 cases are published in [`datasets/`](datasets/README.md). Investigation tools, grading, agents, and evaluation are being integrated incrementally from an existing local Inquest prototype. Those sections below describe the intended implementation; no end-to-end agent results are published yet.
 
 ## Why incident investigation?
 
@@ -165,6 +165,14 @@ Difficulty changes the quality and ambiguity of available evidence:
 
 The existing `ood` design retains the same topology and incident mechanisms. Its rule tagger was written with both wording families visible. Rule-tagger performance on this split cannot establish language generalization.
 
+### Frozen evaluation inputs
+
+[`inquest-smoke-v1`](datasets/README.md) publishes 120 serialized incidents across development, test, and alternate-wording splits at all three difficulties. Each development set has eight cases; each test/alternate-wording set has sixteen. Fault categories are balanced within each set.
+
+The JSONL files are accompanied by a provenance manifest and SHA-256 checksums. Load these committed bytes for comparisons instead of regenerating cases from seeds. The loader rejects mismatched checksums before parsing and checks case count, identity, order, and set settings. This establishes stable evaluation inputs without depending on cross-version RNG behavior.
+
+This suite supplies small initial comparison fixtures. It is not sufficient for strong performance claims or reliable likelihood fitting, and it contains no agent results. Labels and construction metadata must remain on the evaluator side. See the [data guide](datasets/README.md) for verification commands, interpretation limits, and version policy.
+
 ### Investigation tools
 
 The prototype exposes eight read-only tools. Calls consume a step, including invalid calls. Observation limits keep investigations budgeted.
@@ -251,7 +259,7 @@ The [roadmap](docs/ROADMAP.md) tracks implementation of these artifacts. **This 
 
 ## Getting started
 
-**Verified environment: Python 3.14.** Installation, the example, and all 117 tests have been checked locally on that version. Python 3.10+ is the compatibility target declared in package metadata; versions 3.10–3.13 have not yet been tested. A version matrix is planned in milestone 09.
+**Verified environment: Python 3.14.** Installation, both examples, and all 135 tests have been checked locally on that version. Python 3.10+ is the compatibility target declared in package metadata; versions 3.10–3.13 have not yet been tested. A version matrix is planned in milestone 09.
 
 Use Python 3.14 for the currently verified setup:
 
@@ -262,6 +270,7 @@ python3.14 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e ".[dev]"
 python examples/generate_incident.py
+python examples/load_frozen_set.py
 python -m pytest -q
 ```
 
@@ -283,7 +292,7 @@ The generator uses only the Python standard library and needs **no API key**. Te
 
 **Construction bundles contain ground truth**, including the root service, fault, and expected fix. The example prints those labels for inspection; it does not perform an agent investigation. Agents will access telemetry through the budgeted tool interface in the next milestone.
 
-Seeds must be non-negative integers; supported difficulties are `easy`, `medium`, and `hard`, and splits are `dev`, `test`, and `ood`. JSON loading checks required bundle fields, labeled outcomes, metric dimensions and finite values, log records, event records, and trace records. Generation uses its own random-number generator without changing global random state. Byte-for-byte seed reproducibility is tested within the same Python runtime; cross-version fingerprints are not yet guaranteed. Save serialized bundles to freeze cases across environments.
+Seeds must be non-negative integers; supported difficulties are `easy`, `medium`, and `hard`, and splits are `dev`, `test`, and `ood`. JSON loading checks required bundle fields, labeled outcomes, metric dimensions and finite values, log records, event records, and trace records. Generation uses its own random-number generator without changing global random state. Byte-for-byte seed reproducibility is tested within the same Python runtime; cross-version fingerprints are not guaranteed. Use the [checksummed frozen files](datasets/README.md) as the canonical inputs for published comparisons.
 
 ### Current repository layout
 
@@ -297,12 +306,18 @@ Inquest/
 ├── src/inquest/
 │   ├── __init__.py             Public construction API
 │   ├── topology.py             Service graph and shortest-hop queries
-│   └── scenario.py             Telemetry generation and JSON bundles
+│   ├── scenario.py             Telemetry generation and JSON bundles
+│   └── frozen.py               Checksum-verified frozen set loader
 ├── tests/
 │   ├── test_topology.py        Graph behavior and invalid service checks
-│   └── test_scenario.py        Fault coverage, replay, propagation, and validation
+│   ├── test_scenario.py        Fault coverage, replay, propagation, and validation
+│   └── test_frozen.py          Saved cases, corruption checks, and no-RNG loading
 ├── examples/
-│   └── generate_incident.py    Runnable construction and replay example
+│   ├── generate_incident.py    Runnable construction and replay example
+│   └── load_frozen_set.py      Verify and load published incident files
+├── datasets/
+│   ├── README.md              Data guide and version policy
+│   └── smoke-v1/              Nine JSONL sets, manifest, and SHA256SUMS
 └── docs/
     ├── DESIGN.md              Decisions, rationale, and trade-offs
     ├── ROADMAP.md             Milestones and acceptance criteria

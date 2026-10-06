@@ -17,7 +17,7 @@ Pranjal Prajapati is the project maintainer. The maintainer sets scope and prior
 | Seeded private random generator | Repeats a case without mutating application-wide random state | Global randomness creates accidental coupling; recording every random draw adds complexity | Repeated generation, global-state isolation, and separate-process fingerprints were checked on Python 3.14 |
 | Fault category cycles with seed modulo eight | Ensures a consecutive eight-case range covers each fault category | Random fault selection can leave small comparisons imbalanced | This sampling rule is predictable; future agents must not receive construction seeds or scenario IDs that expose the rule |
 | 120 one-minute telemetry samples | Supplies a baseline and incident window while keeping bundles small | Longer or irregularly sampled streams increase realism and storage needs | Each metric is checked for length and finite, non-negative samples; the time horizon is an authored benchmark choice |
-| JSON bundles | Makes frozen cases inspectable and portable without a database | Binary or columnar storage reduces size for larger datasets but adds dependencies | Round trips are tested; stored bundles include labels and belong on the construction/evaluation side |
+| Checksummed frozen JSONL sets | Fixes evaluation inputs independently of generator or Python RNG changes, with inspectable records | Regenerating from seeds saves storage but can change inputs across environments; binary storage reduces size but adds dependencies | Nine sets are published with a manifest and SHA-256 catalog; loader tests reject changed files and run with generation disabled |
 | Dataclasses and standard-library generator | Keeps the first runnable component small and dependency-light | A schema library can provide richer validation at the cost of a runtime dependency | Loading checks core fields and telemetry records; it is not a complete versioned schema or hostile-input resource-limit mechanism |
 | Separate labels from future tool observations | Prevents the answer from being directly exposed to investigation agents | Passing full construction bundles would give agents the labeled answer | An explicit root-cause trace label was removed; the tool boundary and its tests remain milestone 03 |
 
@@ -33,9 +33,9 @@ Pranjal Prajapati is the project maintainer. The maintainer sets scope and prior
 
 ## Current verification boundary
 
-Installation, the example, and 117 tests were verified locally on Python 3.14. The package declares Python 3.10+ as a compatibility target, with a version matrix still pending. No end-to-end agent investigation, actual LLM comparison, or production validation has been published in this repository.
+Installation, both examples, and 135 tests were verified locally on Python 3.14. The package declares Python 3.10+ as a compatibility target, with a version matrix still pending. No end-to-end agent investigation, actual LLM comparison, or production validation has been published in this repository.
 
-Byte-for-byte generation across Python versions is not guaranteed. Serialized bundles are the planned common input for comparisons across environments. The current JSON loader has no schema-version migration support; that must be addressed before treating future bundle revisions as interchangeable.
+Byte-for-byte generation across Python versions is not guaranteed. The [published frozen suite](../datasets/README.md) is the common input for initial comparisons: readers load the recorded bytes and verify checksums without generating cases. It contains 120 synthetic incidents and is intended for small initial comparisons rather than statistical performance claims or likelihood training. Suite changes require a new version. The manifest has format version 1; individual scenario records still have no schema migration support.
 
 ## Questions a technical walkthrough should answer
 

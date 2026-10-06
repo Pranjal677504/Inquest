@@ -34,6 +34,16 @@ Clarified that Python 3.14 is the locally verified environment and that Python 3
 
 Verification: checked local documentation links and the documented API examples against the installed package; reviewed the design notes against the source and tests; checked formatting with `git diff --check`. These are documentation changes; no additional software test results are claimed.
 
+### Repository metadata and frozen evaluation inputs
+
+Added a repository description and the topics `python`, `incident-response`, `root-cause-analysis`, `microservices`, `synthetic-data`, `reproducible-research`, and `agent-evaluation`; read back the published settings to verify them.
+
+Published `inquest-smoke-v1`: nine frozen JSONL sets containing 120 synthetic cases. Each development set contains eight cases, and each test/alternate-wording set contains sixteen, across easy, medium, and hard difficulties. The manifest records the actual generation runtime, generator revision, source hashes, ordered identities, selection settings, byte counts, and file hashes. A SHA-256 catalog covers the manifest and every data file. Versioned file bytes, rather than cross-version generation from seeds, are the canonical evaluation inputs.
+
+Added a loader and example that verify checksums before loading saved cases, then check metadata and scenario validity. Tests read all nine sets with generation and random-number construction disabled and reject changed files, truncated files, missing checksums, and invalid set names. `python -m pytest -q` passed 135 tests on Python 3.14. Both runnable examples passed. `shasum -a 256 -c SHA256SUMS` verified all ten catalog entries. Documentation links, the published manifest fingerprint, and formatting were checked.
+
+Limitations: these are small public fixtures with labels, not secret holdout data, complete service/fault coverage, statistical performance evidence, or sufficient likelihood training data. They contain no agent results. Agent access must exclude labels, seeds, IDs, and construction metadata. Data is distributed in the checkout. Published suites are immutable; changed cases require a new version. Python compatibility verification remains limited to 3.14.
+
 Next milestone: budgeted investigation tools with observation validation and checks for answer leakage.
 
 ## How to read this log
