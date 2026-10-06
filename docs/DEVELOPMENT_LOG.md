@@ -1,26 +1,26 @@
 # Development log
 
-This repository starts from an existing local Inquest prototype. The history records its gradual integration, verification, and subsequent improvements. Development may use Codex assistance; individual entries record the work and evidence rather than making claims of unaided authorship.
+This repository starts from an existing local Inquest prototype. This log records integration, improvements, verification, and remaining limitations. The initial repository setup and first code milestone were completed on 6 October 2026; there is no multi-day development history yet.
 
-## 2026-10-06 — Repository foundation
+## 2026-10-06 — Initial setup and first code milestone
+
+### Repository foundation
 
 Established the repository scope, milestone acceptance criteria, license, and development log. The initial repository contains documentation and repository hygiene files. Prototype code and previously generated result tables will be integrated in later verified milestones.
 
 Verification: checked all local Markdown links and reviewed the initial file list to exclude credentials, generated caches, and prior run artifacts. No software tests apply to this documentation-only milestone.
 
-Next milestone: integrate deterministic incident bundles and their tests.
+### README technical expansion
 
-## 2026-10-06 — README technical expansion
-
-Expanded the foundation README at the maintainer's request. It now explains the investigation problem, architecture, Bayesian reasoning, initial service graph, incident categories, tools, agent comparisons, evaluation contract, reproduction requirements, and validity limits. Details are grounded in the existing local prototype and marked as intended integration where they are not yet present in this branch. The roadmap remains at the foundation milestone.
+Expanded the foundation README to explain the investigation problem, architecture, Bayesian reasoning, initial service graph, incident categories, tools, agent comparisons, evaluation contract, reproduction requirements, and validity limits. Details were grounded in the existing local prototype and marked as planned where not yet implemented. At this point in the initial setup, only the foundation milestone was complete.
 
 Verification: checked documentation links, Mermaid source, the illustrative JSON report, and the documented topology and tool names against the prototype. Runnable setup and measured results remain pending their implementation milestones.
 
 GitHub preview exposed a Markdown conflict in the display equations and an unsupported math macro. Changed them to fenced-math format with supported notation and checked the published presentation.
 
-## 2026-10-06 — Deterministic incident bundles
+### Deterministic incident bundles
 
-Integrated milestone 02 at the maintainer's request for working source code. The topology and generator originate from the existing local Inquest prototype (`src/inquest/topology.py` and `src/inquest/scenario.py`); this is verified integration with improvements, not a claim of a newly authored simulator.
+Integrated milestone 02. The topology and generator originate from the existing local Inquest prototype (`src/inquest/topology.py` and `src/inquest/scenario.py`). This milestone integrates and improves those components.
 
 Added generation and seed-range validation, explicit unknown-service errors, JSON bundle checks, a public Python API, basic package configuration, and a runnable construction/replay example. Replaced the prototype's trace note `root span failing` with ordinary request-failure wording so telemetry no longer explicitly labels the answer. Construction bundles still deliberately contain labels and must not be passed directly to agents.
 
@@ -28,8 +28,14 @@ Verification on Python 3.14: installed `python -m pip install -e ".[dev]"` into 
 
 Limitations: installation and tests are locally verified on Python 3.14 only; the declared Python 3.10+ range will receive a CI matrix in milestone 09. Cross-version seed fingerprints are not guaranteed. Tools, agents, grading, end-to-end investigations, and benchmark results remain pending. Basic packaging is present to make this milestone runnable; the full CLI, wheel checks, and CI acceptance gate remain open.
 
-Next milestone: integrate budgeted investigation tools and review their observations for answer leakage. Resume the existing daily cadence from the next development session.
+### Documentation corrections and design rationale
 
-## Entry format
+Clarified that Python 3.14 is the locally verified environment and that Python 3.10+ remains an unverified compatibility target. Replaced operational instructions in the roadmap with reader-facing deliverables and prerequisites. Consolidated the initial work under its actual date and removed wording suggesting that multiple development days had already elapsed. Added maintainer responsibilities and design notes covering implementation choices, alternatives, evidence, and limitations.
 
-For each completed development session, record the actual local date, milestone, origin of reused code, behavior added or fixed, verification command and outcome, limitations, and next step. A skipped or blocked run does not become a completed milestone.
+Verification: checked local documentation links and the documented API examples against the installed package; reviewed the design notes against the source and tests; checked formatting with `git diff --check`. These are documentation changes; no additional software test results are claimed.
+
+Next milestone: budgeted investigation tools with observation validation and checks for answer leakage.
+
+## How to read this log
+
+Entries use the date on which work occurred. Multiple changes on one day appear together. Each entry identifies the affected milestone, origin of integrated components, verification evidence, limitations, and next planned capability.

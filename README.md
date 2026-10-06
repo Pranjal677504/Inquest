@@ -251,19 +251,21 @@ The [roadmap](docs/ROADMAP.md) tracks implementation of these artifacts. **This 
 
 ## Getting started
 
-Run the incident construction example with Python 3.10+:
+**Verified environment: Python 3.14.** Installation, the example, and all 117 tests have been checked locally on that version. Python 3.10+ is the compatibility target declared in package metadata; versions 3.10–3.13 have not yet been tested. A version matrix is planned in milestone 09.
+
+Use Python 3.14 for the currently verified setup:
 
 ```bash
 git clone https://github.com/Pranjal677504/Inquest.git
 cd Inquest
-python -m venv .venv
+python3.14 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e ".[dev]"
 python examples/generate_incident.py
 python -m pytest -q
 ```
 
-On Windows, activate the environment with `.venv\Scripts\Activate.ps1` in PowerShell. The example constructs `dev-easy-7`: a database migration incident with eight services, 120 minutes of telemetry, two events, and 60 sampled traces. It serializes and reloads the complete bundle, verifies equality, and prints a SHA-256 fingerprint.
+On Windows, create the environment with `py -3.14 -m venv .venv` and activate it with `.venv\Scripts\Activate.ps1` in PowerShell; Windows execution has not yet been verified. The example constructs `dev-easy-7`: a database migration incident with eight services, 120 minutes of telemetry, two events, and 60 sampled traces. It serializes and reloads the complete bundle, verifies equality, and prints a SHA-256 fingerprint.
 
 You can also construct scenarios through Python:
 
@@ -302,6 +304,7 @@ Inquest/
 ├── examples/
 │   └── generate_incident.py    Runnable construction and replay example
 └── docs/
+    ├── DESIGN.md              Decisions, rationale, and trade-offs
     ├── ROADMAP.md             Milestones and acceptance criteria
     └── DEVELOPMENT_LOG.md     Completed work and verification
 ```
@@ -317,7 +320,13 @@ Planned additions include investigation tools, agents, a CLI, experiment artifac
 | Research evidence | 11–16 | LLM integration, real-model pilot, failure analysis, calibration, authored incidents, and topology variation |
 | Showcase and release | 17–18 | Reproducible figures, walkthrough, benchmark card, and verified release |
 
-Milestones are developed gradually. Each completion requires evidence, and a complex milestone can span multiple sessions. The [development log](docs/DEVELOPMENT_LOG.md) records prototype integration, new work, checks, and remaining limitations.
+The repository foundation and first source-code integration were completed on **6 October 2026**. The checked milestones record that initial day's work; the remaining milestones describe future development. The [development log](docs/DEVELOPMENT_LOG.md) records actual changes, verification, and limitations. Dates reflect when work occurred.
+
+### Project ownership and design decisions
+
+**Maintainer: Pranjal Prajapati.** The maintainer sets project scope and priorities and is responsible for accepting design changes, reviewing evidence, and deciding when a release is ready. Contribution reviews should include the reason for a choice, its alternatives, and its limitations.
+
+The [design notes](docs/DESIGN.md) explain the current implementation choices and distinguish them from planned agent architecture. They provide a basis for technical discussion and review as the project evolves.
 
 ## Known limitations
 

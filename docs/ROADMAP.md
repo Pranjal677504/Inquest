@@ -1,6 +1,6 @@
 # Development roadmap
 
-Milestones are ordered by dependency. Each development session completes one focused milestone or a coherent part of it. Complex milestones may take several sessions. A completion mark requires the stated evidence; a calendar date alone does not imply completion.
+This roadmap describes the intended capabilities and the evidence needed to consider them complete. Milestones are ordered by dependency. Checked items were completed during the initial repository setup on 6 October 2026; unchecked items are planned work with no promised completion date.
 
 ## Foundation
 
@@ -15,13 +15,13 @@ Milestones are ordered by dependency. Each development session completes one foc
 - [ ] **06 — Bayesian reasoning.** Integrate evidence tags, dev-only likelihood fitting, belief updates, and expected information gain. Validate probabilities, normalization, and probe choice on small fixtures with known answers.
 - [ ] **07 — Offline agents and fair comparisons.** Integrate random, downstream-alert, and information-gain agents. Align available system knowledge and budgets. Run a small smoke comparison and include failures.
 - [ ] **08 — Reproducible evaluation.** Record scenario IDs, run configuration, code revision, model checksum, timings, and errors. Produce raw JSONL and summaries with confidence intervals. Verify interrupted runs preserve usable artifacts.
-- [ ] **09 — Packaging and CI.** Add an installable command, bundled model resources, tests across supported Python versions, and a wheel smoke test outside the checkout. Publish passing workflow evidence.
+- [ ] **09 — Packaging and CI.** An installable command, bundled model resources, a Python 3.10–3.14 test matrix, and a wheel smoke test outside the checkout. Passing workflows will establish the verified compatibility range; currently only Python 3.14 has been tested locally.
 - [ ] **10 — Investigation replay.** Save full tool observations and belief transitions. Add a self-contained way to inspect a successful and a failed investigation without credentials.
 
 ## LLM and research evidence
 
 - [ ] **11 — LLM adapters.** Integrate local and hosted backends, structured perception, and ReAct. Test parse failures, retries, cache behavior, per-episode token accounting, and report validation using scripted responses. Document how to run locally without an API key.
-- [ ] **12 — Real local-model pilot.** Run both LLM agent styles on the same frozen cases using an available local model. Save the model identity, prompts, transcript, usage, outcomes, and limitations. If a model or sufficient compute is unavailable, leave this milestone pending and request the specific missing input.
+- [ ] **12 — Real local-model pilot.** A comparison of both LLM agent styles on the same frozen cases, with model identity, prompts, transcripts, usage, outcomes, and limitations. Requires a suitable local model and sufficient compute. Completion depends on actual recorded runs.
 - [ ] **13 — Failure analysis and calibration.** Inspect representative failures. Measure tag accuracy and confidence calibration; fit any calibration only on dev data and assess it on held-out data.
 - [ ] **14 — Authored holdout incidents.** Add a small documented set of hand-authored incidents outside the random generator. Record construction, ground truth, and how they differ from generated cases.
 - [ ] **15 — Evidence support.** Extend grading to check actual supporting observations or lines, with examples of valid and invalid citations. Keep legacy metrics clearly identified.
@@ -30,10 +30,10 @@ Milestones are ordered by dependency. Each development session completes one foc
 ## Showcase and release
 
 - [ ] **17 — Reproducible result figures.** Generate plots from committed run data with uncertainty, clear labels, and a documented reproduction command. Share successes and failures.
-- [ ] **18 — Release and walkthrough.** Finish the benchmark card, setup guide, architecture explanations, one walkthrough, changelog, and a versioned release. Verify setup from a fresh checkout and stop the daily build schedule when all accepted milestones are complete.
+- [ ] **18 — Release and walkthrough.** A benchmark card, setup guide, architecture explanations, walkthrough, changelog, and versioned release, supported by setup verification from a fresh checkout.
 
-## Working rules
+## Completion criteria
 
-Commit completed changes with their current dates and messages that explain the behavior added or fixed. Integrating a module from the existing prototype is recorded as integration. Experiments are recorded only after they run. Unfinished or blocked milestones stay open.
+Completed milestones have an implementation or artifact, relevant verification, and a dated development-log entry. Published experiments include the runs and settings behind their results. Existing prototype components retain their integration history. A pending item indicates that its acceptance evidence is incomplete.
 
-The roadmap is a plan, not a guarantee that every feature will be suitable. Revise it when tests or experiments reveal a better direction, and record why.
+Scope may change as tests and experiments reveal better approaches. Material changes to the plan are accompanied by a rationale in the development log.
