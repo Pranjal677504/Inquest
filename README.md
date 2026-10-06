@@ -8,7 +8,7 @@ An agent receives an incident and a limited investigation budget. It queries tel
 
 [Architecture](#architecture) · [Benchmark design](#benchmark-design) · [Agents](#agent-comparisons) · [Evaluation](#evaluation-protocol) · [Roadmap](docs/ROADMAP.md) · [Development log](docs/DEVELOPMENT_LOG.md)
 
-> **Development preview:** This repository currently contains the project foundation and development plan. Components from an existing local Inquest prototype are being integrated and verified incrementally. The technical design below describes that prototype and the intended repository implementation. Runnable installation instructions and measured results will be published with their corresponding milestones.
+> **Development preview:** The service topology and deterministic incident generator are implemented, with a runnable example and tests. Investigation tools, grading, agents, and evaluation are being integrated incrementally from an existing local Inquest prototype. Those sections below describe the intended implementation; no end-to-end agent results are published yet.
 
 ## Why incident investigation?
 
@@ -251,16 +251,37 @@ The [roadmap](docs/ROADMAP.md) tracks implementation of these artifacts. **This 
 
 ## Getting started
 
-You can clone the repository and review the project design now:
+Run the incident construction example with Python 3.10+:
 
 ```bash
 git clone https://github.com/Pranjal677504/Inquest.git
 cd Inquest
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev]"
+python examples/generate_incident.py
+python -m pytest -q
 ```
 
-The current milestone contains documentation. An executable quickstart will be added when the corresponding code is integrated and verified.
+On Windows, activate the environment with `.venv\Scripts\Activate.ps1` in PowerShell. The example constructs `dev-easy-7`: a database migration incident with eight services, 120 minutes of telemetry, two events, and 60 sampled traces. It serializes and reloads the complete bundle, verifies equality, and prints a SHA-256 fingerprint.
 
-The runtime target is Python 3.10+ with NumPy for the offline reasoner and pytest for development checks. Offline simulation and reference agents are designed to run without API credentials. Hosted LLM backends require provider credentials; a local model server can provide an alternative when suitable compute is available.
+You can also construct scenarios through Python:
+
+```python
+from inquest import Scenario, generate, iter_scenarios
+
+incident = generate(seed=7, difficulty="easy", split="dev")
+restored = Scenario.from_json(incident.to_json())
+assert incident == restored
+
+cases = list(iter_scenarios("test", n=8, difficulty="hard", start=0))
+```
+
+The generator uses only the Python standard library and needs **no API key**. Tests use pytest. NumPy will be introduced with the offline reasoner. Hosted LLM backends will require provider credentials; a local model server can provide an alternative when suitable compute is available.
+
+**Construction bundles contain ground truth**, including the root service, fault, and expected fix. The example prints those labels for inspection; it does not perform an agent investigation. Agents will access telemetry through the budgeted tool interface in the next milestone.
+
+Seeds must be non-negative integers; supported difficulties are `easy`, `medium`, and `hard`, and splits are `dev`, `test`, and `ood`. JSON loading checks required bundle fields, labeled outcomes, metric dimensions and finite values, log records, event records, and trace records. Generation uses its own random-number generator without changing global random state. Byte-for-byte seed reproducibility is tested within the same Python runtime; cross-version fingerprints are not yet guaranteed. Save serialized bundles to freeze cases across environments.
 
 ### Current repository layout
 
@@ -268,14 +289,24 @@ The runtime target is Python 3.10+ with NumPy for the offline reasoner and pytes
 Inquest/
 ├── README.md                  Project design and status
 ├── LICENSE                    MIT license
+├── pyproject.toml             Package and test configuration
 ├── .gitignore                 Generated files and credentials excluded
 ├── .gitattributes             Text normalization
+├── src/inquest/
+│   ├── __init__.py             Public construction API
+│   ├── topology.py             Service graph and shortest-hop queries
+│   └── scenario.py             Telemetry generation and JSON bundles
+├── tests/
+│   ├── test_topology.py        Graph behavior and invalid service checks
+│   └── test_scenario.py        Fault coverage, replay, propagation, and validation
+├── examples/
+│   └── generate_incident.py    Runnable construction and replay example
 └── docs/
     ├── ROADMAP.md             Milestones and acceptance criteria
     └── DEVELOPMENT_LOG.md     Completed work and verification
 ```
 
-Planned additions include a Python package, tests, examples, experiment artifacts, CI workflows, and a benchmark card. The layout will be updated as those components become available.
+Planned additions include investigation tools, agents, a CLI, experiment artifacts, CI workflows, and a benchmark card. The layout will be updated as those components become available.
 
 ## Development roadmap
 
