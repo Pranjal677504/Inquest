@@ -16,6 +16,8 @@ Expanded the foundation README at the maintainer's request. It now explains the 
 
 Verification: checked documentation links, Mermaid source, the illustrative JSON report, and the documented topology and tool names against the prototype. Runnable setup and measured results remain pending their implementation milestones.
 
+GitHub preview exposed a Markdown conflict in the display equations. Changed them to GitHub's documented fenced-math format and checked the published presentation.
+
 ## Entry format
 
 For each completed development session, record the actual local date, milestone, origin of reused code, behavior added or fixed, verification command and outcome, limitations, and next step. A skipped or blocked run does not become a completed milestone.

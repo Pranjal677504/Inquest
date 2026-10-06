@@ -92,20 +92,20 @@ The initial prototype contains 31 feasible pairs across its eight services and e
 
 Belief updates follow:
 
-$$
+```math
 P(h \mid e) \propto P(e \mid h)P(h)
-$$
+```
 
 Probe selection aims to maximize:
 
-$$
+```math
 \operatorname{EIG}(q)
 = \mathcal{H}(H)
 - \mathbb{E}_{o \sim P(o \mid q)}
   [\mathcal{H}(H \mid o,q)]
-$$
+```
 
-Here, $H$ is the current distribution over hypotheses, $q$ is a candidate probe, and $o$ is a possible observation. The prototype enumerates binary tag outcomes to compute this quantity under its likelihood model.
+Here, `H` is the current distribution over hypotheses, `q` is a candidate probe, and `o` is a possible observation. The prototype enumerates binary tag outcomes to compute this quantity under its likelihood model.
 
 The calculation depends on modeling assumptions. Correlated evidence can make Naive Bayes overconfident, so calibration and held-out evaluation are part of the research plan.
 
