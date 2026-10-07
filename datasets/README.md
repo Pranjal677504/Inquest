@@ -53,7 +53,7 @@ Checksums detect changed bytes; they are not signatures. Pin the repository comm
 ## Evaluation boundary
 
 - Bundles contain `root_service`, `fault_type`, the expected fix, and other construction metadata. They are evaluator inputs, not agent observations.
-- Seeds and scenario IDs can reveal the generator's fault-selection rule. The future tool environment must withhold them, labels, and gold metadata from agents.
+- Seeds and scenario IDs can reveal the generator's fault-selection rule. The implemented [tool environment](../docs/TOOLS.md) excludes them, labels, and gold metadata from observations; a future agent harness must also prevent direct access to construction bundles.
 - Tune on development cases; use test and alternate-wording cases only for assessment. These public cases are not a secret held-out dataset.
 - The `ood` split changes signal-log wording within the same authored generator. It is not independent operational data or a held-out topology.
 - No agent scores are included. One or two examples per category are smoke coverage, not strong evidence of model performance.

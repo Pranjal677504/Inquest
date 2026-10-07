@@ -1,13 +1,13 @@
 # Development roadmap
 
-This roadmap describes the intended capabilities and the evidence needed to consider them complete. Milestones are ordered by dependency. Checked items were completed during the initial repository setup on 6 October 2026; unchecked items are planned work with no promised completion date.
+This roadmap describes the intended capabilities and the evidence needed to consider them complete. Milestones are ordered by dependency. Completion dates and verification appear in the development log; unchecked items are planned work with no promised completion date.
 
 ## Foundation
 
 - [x] **01 — Repository foundation.** Establish the project scope, license, roadmap, and an honest record of the existing prototype. Check local documentation links and exclude generated files.
 - [x] **02 — Deterministic incident bundles.** Integrate the prototype topology and scenario generator. Validate inputs, deterministic output, serialization round trips, and fault coverage. Supply a small runnable example.
   - Published extension: nine versioned frozen JSONL sets, a checksummed provenance manifest, and a verified loader. These files provide the canonical initial evaluation inputs; cross-version RNG equivalence is not assumed.
-- [ ] **03 — Investigation tools.** Integrate telemetry tools, budgets, and observation IDs. Test invalid calls, limits, and deterministic trace selection. Inspect all tool output for unintended ground-truth disclosure.
+- [x] **03 — Investigation tools.** Integrate telemetry tools, budgets, and observation IDs. Test invalid calls, limits, and deterministic trace selection. Inspect all tool output for unintended ground-truth disclosure.
 - [ ] **04 — Report grading.** Integrate service, fault, fix, and confidence grading. Validate malformed reports, non-finite confidence, missing evidence, and invalid citations. Document exactly what each metric measures.
 - [ ] **05 — Bundle CLI.** Add safe generation and replay commands, seed ranges, useful errors, and overwrite protection. Verify a frozen bundle produces the same observations after reload.
 

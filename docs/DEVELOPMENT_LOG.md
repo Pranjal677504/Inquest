@@ -1,6 +1,6 @@
 # Development log
 
-This repository starts from an existing local Inquest prototype. This log records integration, improvements, verification, and remaining limitations. The initial repository setup and first code milestone were completed on 6 October 2026; there is no multi-day development history yet.
+This repository starts from an existing local Inquest prototype. This log records integration, improvements, verification, and remaining limitations. The initial repository setup and first code milestone were completed on 6 October 2026. Subsequent entries use the actual dates of completed work.
 
 ## 2026-10-06 — Initial setup and first code milestone
 
@@ -45,6 +45,28 @@ Added a loader and example that verify checksums before loading saved cases, the
 Limitations: these are small public fixtures with labels, not secret holdout data, complete service/fault coverage, statistical performance evidence, or sufficient likelihood training data. They contain no agent results. Agent access must exclude labels, seeds, IDs, and construction metadata. Data is distributed in the checkout. Published suites are immutable; changed cases require a new version. Python compatibility verification remains limited to 3.14.
 
 Next milestone: budgeted investigation tools with observation validation and checks for answer leakage.
+
+## 2026-10-07 — Budgeted investigation tools
+
+Completed milestone 03 by integrating the eight tools from the local prototype's `src/inquest/env.py` and adapting their observation contract. Added validated step/record limits, sequential observation IDs, detached transcripts, explicit invalid-request outcomes, and a five-query manual example over a frozen case.
+
+Changed the prototype's free-call option so every attempted request is charged. Trace selection now uses the fixed last 40 telemetry minutes rather than the labeled onset. The environment projects permitted fields into a detached telemetry snapshot and does not retain the full construction bundle. Extra metadata in health, metric, log, event, and trace records is excluded. Event lists return summaries, with full details available through a separate call. Log searches use case-insensitive literal substrings instead of regex. Alert threshold crossings require three complete consecutive samples, including at the end of the time horizon.
+
+Verification on Python 3.14: installed `python -m pip install -e ".[dev]"` into a fresh isolated environment; `python -m pytest -q` passed 178 tests. The new tests exercise every tool across all 120 frozen cases, charged invalid requests, zero/exhausted budgets, record caps, literal filters, derived metric/alert behavior, trace cycling and JSON replay, mutation isolation, and independence from construction labels and extra metadata. All three examples ran successfully from outside the checkout. The manual example produced five observation IDs and exhausted its five-step budget without printing construction labels or a scenario ID. All ten frozen-suite checksum entries passed; dataset bytes remain unchanged. Checked local documentation links and `git diff --check`.
+
+Limitations: the example's queries are predetermined, not selected by an autonomous agent. The environment is an observation boundary, not a sandbox for hostile Python code or protection against memorizing public fixtures. Arbitrary external telemetry could contain answer-like text despite field projection. Step budgets approximate investigation cost; text-token counts are estimates. Python versions other than 3.14 remain unverified. Grading and scored agent comparisons are still pending.
+
+Next milestone: report grading with malformed-output, confidence, and citation validation.
+
+### Web workbench integration and preview repair
+
+The repository now requires pull requests for changes to `main`. The initial tool publication is [PR #2](https://github.com/Pranjal677504/Inquest/pull/2); its first preview failed with **No Flask entrypoint found**. The supplied Vercel build error established the cause: the tool branch did not yet contain the web application's `app.py`. Connector access to that Vercel team remained unavailable.
+
+Reviewed [PR #1](https://github.com/Pranjal677504/Inquest/pull/1), which already contained the Flask workbench, static assets, API routes, dependency, and Python runtime selection. Its Vercel status was successful, with no outstanding review threads. Verified 137 tests in an isolated branch snapshot, page/assets/config/health routes, and the existing live browser's frozen-case diagnosis response. PR #1 was merged into `main` at `6f2b725a38379ef64ab3699820efc287e58d3c5f` after the maintainer explicitly authorized this repair.
+
+Integrated that updated `main` into the tool branch without rewriting either branch's commits. Resolved overlapping README sections to retain both the browser setup and the implemented tool interface. Updated the design notes to distinguish the browser's unrestricted educational flow from budgeted benchmark observations.
+
+Combined verification on Python 3.14: 180 tests passed; all three examples ran from outside the checkout; all ten frozen checksum entries passed. The published suite bytes remain unchanged. Integration supplies the missing deployment entry point; the new hosted preview and merge status are recorded in the linked PR.
 
 ## How to read this log
 
