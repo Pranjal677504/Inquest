@@ -58,7 +58,15 @@ Limitations: the example's queries are predetermined, not selected by an autonom
 
 Next milestone: report grading with malformed-output, confidence, and citation validation.
 
-Publication status: the implementation is published in [PR #2](https://github.com/Pranjal677504/Inquest/pull/2). A new repository rule requires pull requests for `main`; the direct push was rejected. The linked Vercel preview failed. Its logs could not be inspected because the connected account lacks access to the deployment's team, and no local Vercel client is available. The PR remains open pending preview resolution or a maintainer decision; these changes are not yet on `main`.
+### Web workbench integration and preview repair
+
+The repository now requires pull requests for changes to `main`. The initial tool publication is [PR #2](https://github.com/Pranjal677504/Inquest/pull/2); its first preview failed with **No Flask entrypoint found**. The supplied Vercel build error established the cause: the tool branch did not yet contain the web application's `app.py`. Connector access to that Vercel team remained unavailable.
+
+Reviewed [PR #1](https://github.com/Pranjal677504/Inquest/pull/1), which already contained the Flask workbench, static assets, API routes, dependency, and Python runtime selection. Its Vercel status was successful, with no outstanding review threads. Verified 137 tests in an isolated branch snapshot, page/assets/config/health routes, and the existing live browser's frozen-case diagnosis response. PR #1 was merged into `main` at `6f2b725a38379ef64ab3699820efc287e58d3c5f` after the maintainer explicitly authorized this repair.
+
+Integrated that updated `main` into the tool branch without rewriting either branch's commits. Resolved overlapping README sections to retain both the browser setup and the implemented tool interface. Updated the design notes to distinguish the browser's unrestricted educational flow from budgeted benchmark observations.
+
+Combined verification on Python 3.14: 180 tests passed; all three examples ran from outside the checkout; all ten frozen checksum entries passed. The published suite bytes remain unchanged. Integration supplies the missing deployment entry point; the new hosted preview and merge status are recorded in the linked PR.
 
 ## How to read this log
 

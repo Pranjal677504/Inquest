@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "Replayable synthetic incidents for investigating microservice failures"
 requires-python = ">=3.10"
 license = "MIT"
+dependencies = ["Flask>=3.1,<4"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7"]

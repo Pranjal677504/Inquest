@@ -25,6 +25,14 @@ Pranjal Prajapati is the project maintainer. The maintainer sets scope and prior
 | Literal log search | Keeps filtering predictable and avoids executing user-supplied regex patterns | Regex is more expressive but needs a bounded execution mechanism | Case-insensitive substring filters and severity/record limits are tested |
 | Detached telemetry and observations | Prevents edits to returned records from changing future observations or saved transcripts | Shared mutable dictionaries are simpler but couple agent code to evaluator state | Snapshot and mutation tests cover the public observation contract |
 
+## Browser workbench and deployment
+
+The Flask workbench exposes the existing incident generator and verified frozen cases through a small API and static browser interface. A root-level `app.py` supplies the deployment entry point; `.python-version` selects the locally verified Python 3.14 runtime. An API plus static assets keeps the demo inspectable without a database or model credentials. A separate frontend framework would add a build pipeline and more dependencies without being required for the current interaction.
+
+Visitors choose a case, browse telemetry, and submit a service, fault, and recovery action to reveal the construction label. This educational flow permits unrestricted browsing and answer reveal. Automated benchmark agents use the separate budgeted Python tool interface; future scored experiments must not consume the browser API's selection metadata or answer endpoint.
+
+Verification: the web branch passed 137 tests before integration; the combined web and tool implementation passed 180 tests on Python 3.14. Page/assets/config/health routes and the live frozen-case diagnosis flow were checked. The browser demo does not establish agent performance, evidence support, adversarial isolation, or production-scale capacity.
+
 ## Planned investigation architecture
 
 | Planned choice | Why explore it | What must be established |
@@ -36,7 +44,7 @@ Pranjal Prajapati is the project maintainer. The maintainer sets scope and prior
 
 ## Current verification boundary
 
-Installation, all three examples, and 178 tests were verified locally on Python 3.14. The package declares Python 3.10+ as a compatibility target, with a version matrix still pending. The manual investigation example makes predetermined queries; no autonomous agent evaluation, actual LLM comparison, or production validation has been published in this repository.
+Installation, all three examples, and 180 tests were verified locally on Python 3.14. The package declares Python 3.10+ as a compatibility target, with a version matrix still pending. The manual investigation example makes predetermined queries; no autonomous agent evaluation, actual LLM comparison, or production validation has been published in this repository.
 
 Byte-for-byte generation across Python versions is not guaranteed. The [published frozen suite](../datasets/README.md) is the common input for initial comparisons: readers load the recorded bytes and verify checksums without generating cases. It contains 120 synthetic incidents and is intended for small initial comparisons rather than statistical performance claims or likelihood training. Suite changes require a new version. The manifest has format version 1; individual scenario records still have no schema migration support.
 
