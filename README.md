@@ -8,7 +8,7 @@ An agent receives an incident and a limited investigation budget. It queries tel
 
 [Architecture](#architecture) · [Benchmark design](#benchmark-design) · [Frozen sets](datasets/README.md) · [Agents](#agent-comparisons) · [Evaluation](#evaluation-protocol) · [Roadmap](docs/ROADMAP.md) · [Development log](docs/DEVELOPMENT_LOG.md)
 
-> **Development preview:** The service topology, incident generator, and checksum-verified frozen incident loading are implemented, with runnable examples and tests. Nine frozen sets containing 120 cases are published in [`datasets/`](datasets/README.md). Investigation tools, grading, agents, and evaluation are being integrated incrementally from an existing local Inquest prototype. Those sections below describe the intended implementation; no end-to-end agent results are published yet.
+> **Development preview:** The service topology, incident generator, checksum-verified frozen loading, and eight budgeted investigation tools are implemented, with runnable examples and tests. Nine frozen sets containing 120 cases are published in [`datasets/`](datasets/README.md). Grading, agents, and evaluation are being integrated from an existing local Inquest prototype. Those sections below describe the intended implementation; no end-to-end agent results are published yet.
 
 ## Why incident investigation?
 
@@ -175,20 +175,22 @@ This suite supplies small initial comparison fixtures. It is not sufficient for 
 
 ### Investigation tools
 
-The prototype exposes eight read-only tools. Calls consume a step, including invalid calls. Observation limits keep investigations budgeted.
+The implemented environment exposes eight read-only tools. Every attempted call consumes a step, including invalid calls. Observations have sequential IDs and detached transcript records. The [tool guide](docs/TOOLS.md) explains arguments, derived signals, record limits, replay behavior, and the observation boundary.
 
 | Tool | Information available |
 |---|---|
 | `list_services` | Service inventory and call dependencies |
-| `get_alerts` | Firing alerts, onset times, and current values |
+| `get_alerts` | Firing alerts, derived threshold-crossing times, and current values |
 | `query_metric` | Metric summaries, baseline/recent comparisons, and deviations |
-| `search_logs` | Recent log lines filtered by service, severity, and pattern |
+| `search_logs` | Recent log lines filtered by service, severity, and literal substring |
 | `get_events` | Deployment, configuration, flag, and migration events |
 | `get_event` | Details of a selected change event |
 | `health_check` | Service health, version, restarts, and certificate lifetime |
-| `get_trace` | A sampled trace matching a requested status |
+| `get_trace` | Deterministic cycling through matching traces from the last 40 minutes |
 
 A stronger result should explain what the agent learned from these observations, not only report that it selected the correct answer.
+
+Tool observations omit construction labels, seeds, scenario IDs, and gold metadata. Trace selection uses a fixed time window rather than true incident onset. The environment snapshots permitted telemetry and does not retain the full construction bundle. This is an observation interface, not an isolation mechanism for untrusted Python code or an assurance against memorizing public data.
 
 ## Agent comparisons
 
@@ -259,7 +261,7 @@ The [roadmap](docs/ROADMAP.md) tracks implementation of these artifacts. **This 
 
 ## Getting started
 
-**Verified environment: Python 3.14.** Installation, both examples, and all 135 tests have been checked locally on that version. Python 3.10+ is the compatibility target declared in package metadata; versions 3.10–3.13 have not yet been tested. A version matrix is planned in milestone 09.
+**Verified environment: Python 3.14.** Installation, all three examples, and all 178 tests have been checked locally on that version. Python 3.10+ is the compatibility target declared in package metadata; versions 3.10–3.13 have not yet been tested. A version matrix is planned in milestone 09.
 
 Use Python 3.14 for the currently verified setup:
 
@@ -271,6 +273,7 @@ source .venv/bin/activate
 python -m pip install -e ".[dev]"
 python examples/generate_incident.py
 python examples/load_frozen_set.py
+python examples/inspect_incident.py
 python -m pytest -q
 ```
 
@@ -290,7 +293,7 @@ cases = list(iter_scenarios("test", n=8, difficulty="hard", start=0))
 
 The generator uses only the Python standard library and needs **no API key**. Tests use pytest. NumPy will be introduced with the offline reasoner. Hosted LLM backends will require provider credentials; a local model server can provide an alternative when suitable compute is available.
 
-**Construction bundles contain ground truth**, including the root service, fault, and expected fix. The example prints those labels for inspection; it does not perform an agent investigation. Agents will access telemetry through the budgeted tool interface in the next milestone.
+**Construction bundles contain ground truth**, including the root service, fault, and expected fix. The generation example prints those labels for inspection. `inspect_incident.py` instead prints five predetermined tool observations from a frozen case, without construction labels. It is a manual walkthrough; autonomous policies and report grading remain planned.
 
 Seeds must be non-negative integers; supported difficulties are `easy`, `medium`, and `hard`, and splits are `dev`, `test`, and `ood`. JSON loading checks required bundle fields, labeled outcomes, metric dimensions and finite values, log records, event records, and trace records. Generation uses its own random-number generator without changing global random state. Byte-for-byte seed reproducibility is tested within the same Python runtime; cross-version fingerprints are not guaranteed. Use the [checksummed frozen files](datasets/README.md) as the canonical inputs for published comparisons.
 
@@ -307,24 +310,28 @@ Inquest/
 │   ├── __init__.py             Public construction API
 │   ├── topology.py             Service graph and shortest-hop queries
 │   ├── scenario.py             Telemetry generation and JSON bundles
-│   └── frozen.py               Checksum-verified frozen set loader
+│   ├── frozen.py               Checksum-verified frozen set loader
+│   └── env.py                  Budgeted telemetry tools and observations
 ├── tests/
 │   ├── test_topology.py        Graph behavior and invalid service checks
 │   ├── test_scenario.py        Fault coverage, replay, propagation, and validation
-│   └── test_frozen.py          Saved cases, corruption checks, and no-RNG loading
+│   ├── test_frozen.py          Saved cases, corruption checks, and no-RNG loading
+│   └── test_env.py             Tool behavior, budgets, replay, and label exclusion
 ├── examples/
 │   ├── generate_incident.py    Runnable construction and replay example
-│   └── load_frozen_set.py      Verify and load published incident files
+│   ├── load_frozen_set.py      Verify and load published incident files
+│   └── inspect_incident.py     Manual five-probe investigation walkthrough
 ├── datasets/
 │   ├── README.md              Data guide and version policy
 │   └── smoke-v1/              Nine JSONL sets, manifest, and SHA256SUMS
 └── docs/
     ├── DESIGN.md              Decisions, rationale, and trade-offs
+    ├── TOOLS.md               Tool contract and observation boundary
     ├── ROADMAP.md             Milestones and acceptance criteria
     └── DEVELOPMENT_LOG.md     Completed work and verification
 ```
 
-Planned additions include investigation tools, agents, a CLI, experiment artifacts, CI workflows, and a benchmark card. The layout will be updated as those components become available.
+Planned additions include report grading, agents, a CLI, experiment artifacts, CI workflows, and a benchmark card. The layout will be updated as those components become available.
 
 ## Development roadmap
 
@@ -335,7 +342,7 @@ Planned additions include investigation tools, agents, a CLI, experiment artifac
 | Research evidence | 11–16 | LLM integration, real-model pilot, failure analysis, calibration, authored incidents, and topology variation |
 | Showcase and release | 17–18 | Reproducible figures, walkthrough, benchmark card, and verified release |
 
-The repository foundation and first source-code integration were completed on **6 October 2026**. The checked milestones record that initial day's work; the remaining milestones describe future development. The [development log](docs/DEVELOPMENT_LOG.md) records actual changes, verification, and limitations. Dates reflect when work occurred.
+The repository foundation and incident bundles were completed on **6 October 2026**, followed by the investigation tools on **7 October 2026**. Checked milestones correspond to recorded implementation and verification; remaining milestones describe future development. The [development log](docs/DEVELOPMENT_LOG.md) records actual changes, verification, and limitations.
 
 ### Project ownership and design decisions
 

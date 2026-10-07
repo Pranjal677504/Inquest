@@ -1,6 +1,6 @@
 # Design decisions
 
-These notes describe the current incident-construction implementation and the rationale for the planned investigation architecture. Planned choices remain open to revision after implementation and evaluation.
+These notes describe incident construction, the implemented tool interface, and the rationale for planned agent architecture. Planned choices remain open to revision after implementation and evaluation.
 
 ## Ownership and review
 
@@ -19,7 +19,11 @@ Pranjal Prajapati is the project maintainer. The maintainer sets scope and prior
 | 120 one-minute telemetry samples | Supplies a baseline and incident window while keeping bundles small | Longer or irregularly sampled streams increase realism and storage needs | Each metric is checked for length and finite, non-negative samples; the time horizon is an authored benchmark choice |
 | Checksummed frozen JSONL sets | Fixes evaluation inputs independently of generator or Python RNG changes, with inspectable records | Regenerating from seeds saves storage but can change inputs across environments; binary storage reduces size but adds dependencies | Nine sets are published with a manifest and SHA-256 catalog; loader tests reject changed files and run with generation disabled |
 | Dataclasses and standard-library generator | Keeps the first runnable component small and dependency-light | A schema library can provide richer validation at the cost of a runtime dependency | Loading checks core fields and telemetry records; it is not a complete versioned schema or hostile-input resource-limit mechanism |
-| Separate labels from future tool observations | Prevents the answer from being directly exposed to investigation agents | Passing full construction bundles would give agents the labeled answer | An explicit root-cause trace label was removed; the tool boundary and its tests remain milestone 03 |
+| Telemetry field projection | Keeps construction labels and gold metadata out of tool observations | Passing full bundles exposes labeled answers; projection alone does not isolate hostile Python code | All tools are tested across 120 frozen cases; changing labels and extra metadata leaves observations unchanged |
+| Uniform tool-call budget | Provides a simple common investigation resource constraint | Real tools differ in cost and latency; uniform steps do not capture those differences | Valid and invalid requests consume steps, and exhaustion prevents dispatch; there is no free-call option |
+| Fixed recent trace window | Makes trace selection independent of labeled onset | Filtering by true onset quietly consults ground truth; a fixed window can miss earlier relevant traces | Traces cycle through matching stored records from minutes 80–119, with replay tests |
+| Literal log search | Keeps filtering predictable and avoids executing user-supplied regex patterns | Regex is more expressive but needs a bounded execution mechanism | Case-insensitive substring filters and severity/record limits are tested |
+| Detached telemetry and observations | Prevents edits to returned records from changing future observations or saved transcripts | Shared mutable dictionaries are simpler but couple agent code to evaluator state | Snapshot and mutation tests cover the public observation contract |
 
 ## Planned investigation architecture
 
@@ -28,12 +32,11 @@ Pranjal Prajapati is the project maintainer. The maintainer sets scope and prior
 | Perception separated from reasoning | Allows errors in interpreting telemetry to be studied separately from investigation policy | Scripted adapter tests and actual model comparisons on identical cases |
 | Naive Bayes over service/fault hypotheses | Provides a simple, inspectable belief update with development-data likelihood fitting | Normalized probabilities, dev-only fitting, and held-out calibration; correlated evidence can cause overconfidence |
 | Expected information gain for probe choice | Chooses observations expected to reduce uncertainty | Small fixtures with known answers and fair comparisons against random and operational heuristics |
-| Uniform tool-call budget | Provides an initial common resource constraint for comparisons | Consistent accounting for valid and invalid calls; real tools differ in latency and cost |
 | Independent grading and saved transcripts | Makes reports and outcomes inspectable after a run | Malformed-report checks, valid observation references, and preservation of errors and failed episodes |
 
 ## Current verification boundary
 
-Installation, both examples, and 135 tests were verified locally on Python 3.14. The package declares Python 3.10+ as a compatibility target, with a version matrix still pending. No end-to-end agent investigation, actual LLM comparison, or production validation has been published in this repository.
+Installation, all three examples, and 178 tests were verified locally on Python 3.14. The package declares Python 3.10+ as a compatibility target, with a version matrix still pending. The manual investigation example makes predetermined queries; no autonomous agent evaluation, actual LLM comparison, or production validation has been published in this repository.
 
 Byte-for-byte generation across Python versions is not guaranteed. The [published frozen suite](../datasets/README.md) is the common input for initial comparisons: readers load the recorded bytes and verify checksums without generating cases. It contains 120 synthetic incidents and is intended for small initial comparisons rather than statistical performance claims or likelihood training. Suite changes require a new version. The manifest has format version 1; individual scenario records still have no schema migration support.
 
