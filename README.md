@@ -259,7 +259,22 @@ The [roadmap](docs/ROADMAP.md) tracks implementation of these artifacts. **This 
 
 ## Getting started
 
-**Verified environment: Python 3.14.** Installation, both examples, and all 135 tests have been checked locally on that version. Python 3.10+ is the compatibility target declared in package metadata; versions 3.10–3.13 have not yet been tested. A version matrix is planned in milestone 09.
+### Browser workbench
+
+The web app lets visitors inspect the existing eight-service incidents without an API key. It loads SHA-256-verified frozen cases or generates a scenario from a seed, displays the service graph, metrics, logs, changes, traces, and health, then reveals the labeled answer after a visitor submits a diagnosis. The initial incident response excludes construction labels and metadata. This is an educational workbench, **not** the budgeted investigation environment, report grader, agent comparison, or validated benchmark result planned below.
+
+Run it locally after installing the package:
+
+```bash
+python3.14 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev]"
+python app.py
+```
+
+Open `http://127.0.0.1:8000`. The repository is ready for a Python web deployment on Vercel: `app.py` is the Flask entrypoint, `public/` contains the browser assets, and `.python-version` selects Python 3.14 to match the verified generator environment. Deploying from the Git repository does not require keys or a separate database.
+
+**Verified environment: Python 3.14.** Installation, both examples, and all 137 tests have been checked locally on that version. Python 3.10+ is the compatibility target declared in package metadata; versions 3.10–3.13 have not yet been tested. A version matrix is planned in milestone 09.
 
 Use Python 3.14 for the currently verified setup:
 
@@ -301,6 +316,9 @@ Inquest/
 ├── README.md                  Project design and status
 ├── LICENSE                    MIT license
 ├── pyproject.toml             Package and test configuration
+├── .python-version            Hosted Python runtime selection
+├── app.py                     Web workbench and incident API
+├── public/                    Browser interface and assets
 ├── .gitignore                 Generated files and credentials excluded
 ├── .gitattributes             Text normalization
 ├── src/inquest/
@@ -311,7 +329,8 @@ Inquest/
 ├── tests/
 │   ├── test_topology.py        Graph behavior and invalid service checks
 │   ├── test_scenario.py        Fault coverage, replay, propagation, and validation
-│   └── test_frozen.py          Saved cases, corruption checks, and no-RNG loading
+│   ├── test_frozen.py          Saved cases, corruption checks, and no-RNG loading
+│   └── test_web.py             API isolation, diagnosis, and input bounds
 ├── examples/
 │   ├── generate_incident.py    Runnable construction and replay example
 │   └── load_frozen_set.py      Verify and load published incident files

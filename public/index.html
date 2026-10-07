@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101b24">
+  <meta name="description" content="Investigate replayable microservice incidents using real InquestBench telemetry.">
+  <title>InquestBench — Incident Workbench</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/styles.css">
+  <script src="/assets/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Case controls">
+      <a class="brand" href="/" aria-label="InquestBench home"><span class="brand-mark">I<span>.</span></span><span><strong>INQUEST</strong><small>BENCH / WORKBENCH</small></span></a>
+      <div class="sidebar-rule"></div>
+      <div class="eyebrow">CASE SETUP <span>01 / 03</span></div>
+      <h1>Investigate the <br><em>signal.</em></h1>
+      <p class="intro">A replayable incident is waiting inside an eight-service system. Follow the evidence to its source.</p>
+      <form id="case-form" class="case-form">
+        <label for="source">CASE SOURCE</label>
+        <select id="source" name="source"><option value="frozen">Verified frozen set</option><option value="generated">Generate from seed</option></select>
+        <div class="form-row"><div><label for="split">SPLIT</label><select id="split" name="split"><option value="dev">Development</option><option value="test">Test</option><option value="ood">Alternate wording</option></select></div><div><label for="difficulty">DIFFICULTY</label><select id="difficulty" name="difficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></div></div>
+        <div id="frozen-field"><label for="case-index">CASE NUMBER</label><select id="case-index" name="index"></select></div>
+        <div id="seed-field" hidden><label for="seed">SEED</label><input id="seed" name="seed" type="number" min="0" max="1000000" value="7" inputmode="numeric"></div>
+        <button class="primary-btn" type="submit"><span>Load incident</span><span aria-hidden="true">↗</span></button>
+      </form>
+      <div class="sidebar-bottom"><span class="pulse-dot"></span><span>SIMULATED SYSTEM · LIVE WORKBENCH</span></div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar"><div class="crumb">INQUESTBENCH <span>/</span> INCIDENT WORKBENCH</div><a href="https://github.com/Pranjal677504/Inquest" target="_blank" rel="noopener noreferrer">VIEW SOURCE <span aria-hidden="true">↗</span></a></header>
+      <section class="hero" aria-labelledby="hero-title"><div><div class="hero-kicker"><span class="red-dot"></span> INCIDENT ACTIVE <span class="hero-line"></span> REPLAYABLE SCENARIO</div><h2 id="hero-title">Find the root cause<span class="period">.</span></h2><p>Eight services. One initiating fault. The most visible alert may be several dependencies away.</p></div><div class="hero-count"><strong>08</strong><span>SERVICES<br>UNDER OBSERVATION</span></div></section>
+      <div id="error-banner" class="error-banner" role="alert" hidden></div>
+      <div class="status-strip" aria-label="Incident status"><div><span class="strip-label">CASE</span><strong id="case-label">Loading…</strong></div><div><span class="strip-label">SOURCE</span><strong id="source-label">—</strong></div><div><span class="strip-label">DIFFICULTY</span><strong id="difficulty-label">—</strong></div><div><span class="strip-label">SYSTEM</span><strong><span class="red-dot small"></span> <span id="system-label">—</span></strong></div></div>
+      <div class="content-grid">
+        <section class="workspace" aria-label="Incident telemetry">
+          <div class="section-header"><div><span class="section-number">01</span><h3>Service topology</h3></div><span class="section-meta">SELECT A SERVICE TO INSPECT</span></div>
+          <div class="topology-panel"><div class="topology-top"><span>REQUEST PATH <span class="arrow">→</span> DEPENDENCIES</span><span>08 NODES / 11 LINKS</span></div><div id="topology" class="topology" role="group" aria-label="Service dependency graph"></div><div class="topology-legend"><span><i class="legend-dot down"></i>DOWN</span><span><i class="legend-dot degraded"></i>DEGRADED</span><span><i class="legend-dot healthy"></i>HEALTHY</span><span class="legend-hint">Arrows point toward dependencies</span></div></div>
+          <div class="section-header telemetry-header"><div><span class="section-number">02</span><h3>Telemetry</h3></div><span id="selected-service" class="selected-chip">GATEWAY</span></div>
+          <div class="tabs" role="tablist" aria-label="Telemetry views"><button class="tab active" data-tab="metrics" type="button" role="tab" aria-selected="true">Metrics</button><button class="tab" data-tab="logs" type="button" role="tab" aria-selected="false">Logs</button><button class="tab" data-tab="events" type="button" role="tab" aria-selected="false">Changes</button><button class="tab" data-tab="traces" type="button" role="tab" aria-selected="false">Traces</button></div>
+          <div id="panel-metrics" class="telemetry-panel" role="tabpanel"><div class="metric-head"><div><span class="mini-label">SIGNAL OVER TIME</span><h4 id="metric-title">Error rate</h4></div><label class="metric-picker">METRIC <select id="metric-select"></select></label></div><div class="chart-wrap"><div class="chart-y"><span id="chart-max">—</span><span id="chart-mid">—</span><span>0</span></div><svg id="metric-chart" viewBox="0 0 640 210" preserveAspectRatio="none" role="img" aria-label="Metric over 120 minutes"></svg></div><div class="chart-x"><span>−120 MIN</span><span>−90 MIN</span><span>−60 MIN</span><span>−30 MIN</span><span>NOW</span></div><div id="metric-stats" class="metric-stats"></div></div>
+          <div id="panel-logs" class="telemetry-panel" role="tabpanel" hidden><div class="filter-row"><span class="mini-label">RECENT LOG STREAM</span><input id="log-search" type="search" placeholder="Search log messages" aria-label="Search log messages"><select id="log-level" aria-label="Filter log level"><option value="ALL">All levels</option><option value="ERROR">Error</option><option value="WARN">Warning</option><option value="INFO">Info</option></select></div><div id="log-list" class="scroll-list"></div></div>
+          <div id="panel-events" class="telemetry-panel" role="tabpanel" hidden><div class="filter-row"><span class="mini-label">RECORDED CHANGES · ALL SERVICES</span><span class="filter-note">The causal change may be missing</span></div><div id="event-list" class="scroll-list"></div></div>
+          <div id="panel-traces" class="telemetry-panel" role="tabpanel" hidden><div class="filter-row"><span class="mini-label">SAMPLED REQUEST TRACES</span><select id="trace-filter" aria-label="Filter traces"><option value="all">All traces</option><option value="faulty">Errors & timeouts</option></select></div><div id="trace-list" class="scroll-list"></div></div>
+        </section>
+
+        <aside class="investigation" aria-label="Investigation panel"><div class="investigation-inner"><div class="section-header"><div><span class="section-number">03</span><h3>Case file</h3></div></div><div class="case-note"><span class="mini-label">INVESTIGATION BRIEF</span><p>Trace symptoms across callers and dependencies. Compare metric shifts with logs and recorded changes before naming the initiating service.</p></div><div class="health-heading"><span class="mini-label">SERVICE HEALTH</span><span id="health-count">—</span></div><div id="health-list" class="health-list"></div><div class="diagnosis-card"><div class="diagnosis-title"><span class="diagnosis-icon">✳</span><div><span class="mini-label">YOUR ASSESSMENT</span><h4>Make a diagnosis</h4></div></div><p>Commit your answer to reveal the construction label.</p><form id="diagnosis-form"><label for="answer-service">ROOT SERVICE</label><select id="answer-service" required></select><label for="answer-fault">FAULT TYPE</label><select id="answer-fault" required></select><label for="answer-action">RECOVERY ACTION</label><select id="answer-action" required></select><button class="diagnose-btn" type="submit">Submit diagnosis <span aria-hidden="true">↗</span></button></form><div id="diagnosis-result" class="diagnosis-result" aria-live="polite" hidden></div></div></div></aside>
+      </div>
+      <footer><span>INQUESTBENCH / SYNTHETIC INCIDENT LAB</span><span>Educational workbench · Not a scored benchmark run</span><a href="https://github.com/Pranjal677504/Inquest/blob/main/README.md" target="_blank" rel="noopener noreferrer">ABOUT THE PROJECT ↗</a></footer>
+    </main>
+  </div>
+</body>
+</html>
