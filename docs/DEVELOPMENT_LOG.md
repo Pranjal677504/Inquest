@@ -58,6 +58,8 @@ Limitations: the example's queries are predetermined, not selected by an autonom
 
 Next milestone: report grading with malformed-output, confidence, and citation validation.
 
+Publication status: the implementation is published in [PR #2](https://github.com/Pranjal677504/Inquest/pull/2). A new repository rule requires pull requests for `main`; the direct push was rejected. The linked Vercel preview failed. Its logs could not be inspected because the connected account lacks access to the deployment's team, and no local Vercel client is available. The PR remains open pending preview resolution or a maintainer decision; these changes are not yet on `main`.
+
 ## How to read this log
 
 Entries use the date on which work occurred. Multiple changes on one day appear together. Each entry identifies the affected milestone, origin of integrated components, verification evidence, limitations, and next planned capability.
