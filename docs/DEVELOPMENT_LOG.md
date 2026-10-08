@@ -78,7 +78,17 @@ Verification on Python 3.14: installed the package and development dependencies 
 
 Limitations: evidence scores still check authored tool/service relevance rather than claim support; existing irrelevant citations can be valid references. Fixes check action and target, with operational parameters unscored. Brier loss concerns accepted joint success and does not establish calibration. Invalid-confidence missingness must be disclosed in future summaries. The evaluator must pair the scenario and transcript from the same episode. The example and test fixtures are not agent accuracy results. Only Python 3.14 has been verified locally.
 
-Next milestone: safe bundle generation and replay commands.
+The original next milestone was safe bundle generation and replay commands; the review below changes that priority.
+
+### Review corrections and compatibility CI
+
+Reworked the README around the shipped browser, generator, frozen inputs, tools, and grader, with direct links to source and tests. Removed the long proposed-agent specification from the landing page. Added primary-source related work covering Cloud-OpsBench, OpenRCA, AIOpsLab, ITBench, ORCA-bench, and OpenRCA 2.0. Replayability and efficiency are established benchmark practices; information gain and calibration remain proposed experiments, not claimed advantages.
+
+Clarified that standard-library core modules coexist with a Flask runtime dependency in the installed distribution. Added a read-only, pinned-action Linux CI matrix for Python 3.10–3.14 covering installation, behavior tests, frozen checksums, and examples outside the checkout. Workflow configuration does not itself establish compatibility; actual run results supply that evidence.
+
+Changed research priorities: independently authored cases come next, followed by a minimal recorded real-model pilot, ahead of convenience CLI work. Existing milestone identifiers remain stable. Added acceptance requirements for separate fitting data, likelihood provenance, correlated evidence checks, leakage review, and public-holdout limitations. Design notes explain the proposed information-gain calculation and alternatives without suggesting a fitted model already exists.
+
+Local verification on Python 3.14: 243 tests passed; the README's budgeted-tool example ran; all ten frozen checksum entries and local Markdown links passed; formatting checks passed. No source or published dataset bytes changed. CI results will establish compatibility only after the jobs run. No independent cases, model runs, likelihood fits, or performance measurements are claimed by this correction.
 
 ## How to read this log
 

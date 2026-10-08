@@ -1,284 +1,28 @@
 # InquestBench
 
-**Replayable incident investigation for tool-using AI agents.**
+**A working incident workbench and evaluation toolkit for microservice root-cause investigation.**
 
-InquestBench is a research and engineering project for evaluating how agents investigate failures in microservice systems. Its central question is whether separating **telemetry interpretation**, **hypothesis tracking**, and **probe selection** produces more accurate and efficient investigations.
+[Try the workbench](https://inquestbench.vercel.app) · [Tool API](docs/TOOLS.md) · [Grading](docs/GRADING.md) · [Frozen data](datasets/README.md) · [Related work](docs/RELATED_WORK.md) · [Roadmap](docs/ROADMAP.md)
 
-An agent receives an incident and a limited investigation budget. It queries telemetry, distinguishes a root cause from its downstream symptoms, and submits a diagnosis with a proposed fix, supporting observations, and confidence.
+Investigate an incident across eight services: follow dependencies, inspect metrics and logs, compare recent changes, and submit a diagnosis. The browser demo works without an API key. The Python toolkit exposes the same incident data through budgeted tools and grades reports against evaluator-held labels.
 
-[Architecture](#architecture) · [Benchmark design](#benchmark-design) · [Frozen sets](datasets/README.md) · [Agents](#agent-comparisons) · [Evaluation](#evaluation-protocol) · [Roadmap](docs/ROADMAP.md) · [Development log](docs/DEVELOPMENT_LOG.md)
+**Status:** incident construction, the browser workbench, frozen loading, budgeted tools, and report grading work today. Autonomous agents, a fitted reasoner, and end-to-end model experiments are not yet published. This is an early evaluation toolkit, not a validated production benchmark.
 
-> **Development preview:** The service topology, incident generator, checksum-verified frozen loading, eight budgeted investigation tools, and report grading are implemented, with runnable examples and tests. Nine frozen sets containing 120 cases are published in [`datasets/`](datasets/README.md). Agents and evaluation are being integrated from an existing local Inquest prototype. Those sections below describe the intended implementation; no end-to-end agent results are published yet.
+## What you can run
 
-## Why incident investigation?
-
-Production incidents produce many correlated symptoms. An unavailable database can cause errors in payments, orders, and the gateway; the most visible alert may appear several services away from the initiating fault.
-
-A useful investigation agent has to answer more than “which service is unhealthy?”
-
-- Which service initiated the failure?
-- What distinguishes a deployment regression from a configuration change or capacity problem?
-- Which observation would most efficiently separate the remaining explanations?
-- Does the cited evidence support the diagnosis?
-- Is the agent's confidence consistent with how often it is correct?
-
-For example, a database migration might introduce lock contention. Orders slow down, payment requests time out, and gateway errors increase. An investigator should connect these symptoms to the migration and database locks, then propose the relevant recovery action.
-
-InquestBench makes this process replayable so investigation policies can be compared on the same incident.
-
-## Project objectives
-
-| Objective | Evidence the project will provide |
-|---|---|
-| Reproducible incidents | Serialized bundles, deterministic generation, and replay checks |
-| Transparent reasoning | Explicit hypotheses, belief transitions, and selected probes |
-| Fair agent comparisons | Identical cases, documented system knowledge, and equal investigation budgets |
-| Auditable results | Raw episode scores, run manifests, transcripts, and recorded failures |
-| Clear research boundaries | A benchmark card, calibration analysis, and documented validity limits |
-| Practical developer experience | An installable command, tested examples, CI, and a verified release |
-
-These are acceptance targets. Their completion is tracked in the [roadmap](docs/ROADMAP.md).
-
-## Architecture
-
-The design separates incident construction from investigation and grading.
-
-```mermaid
-flowchart TB
-    subgraph Construction["Incident construction"]
-        C[Seed, split and difficulty] --> G[Scenario generator]
-        G --> B[Replayable telemetry bundle]
-        G --> GT[Ground truth]
-    end
-
-    subgraph Investigation["Budgeted investigation"]
-        B --> E[Read-only tool environment]
-        E --> O[Tool observation]
-        O --> P[Perception: text to evidence tags]
-        P --> H[Belief over service and fault]
-        H --> Q[Next probe by information gain]
-        Q --> E
-        H --> R[Diagnosis, fix, evidence and confidence]
-    end
-
-    subgraph Evaluation["Evaluation and inspection"]
-        GT --> S[Report grader]
-        R --> S
-        S --> A[Scores and run artifacts]
-        O --> T[Investigation transcript]
-        H --> T
-    end
-```
-
-**Scenario construction** produces telemetry and labeled outcomes. The intended evaluation boundary keeps ground truth out of agent observations; reviewing tool output for answer leakage is an explicit integration requirement.
-
-**Perception** converts an observation into a small evidence vocabulary, such as an expired certificate, a recent configuration change, or an increase in database lock waits. A rule tagger provides an oracle reference; an LLM tagger supplies a learned interpretation.
-
-**Reasoning** maintains competing service/fault hypotheses and updates them as observations arrive. The prototype uses a Naive Bayes likelihood model fitted on development scenarios.
-
-**Probe selection** chooses the unused query with the highest expected information gain. The agent stops when it reaches its configured confidence threshold, further probes offer little expected information, or the budget is exhausted.
-
-**Grading** compares the final report with the incident's labeled outcome and records accuracy, evidence quality, confidence, and investigation cost.
-
-### Hypothesis-driven investigation
-
-A hypothesis is a pair:
-
-```text
-(root-cause service, fault type)
-```
-
-The initial prototype contains 31 feasible pairs across its eight services and eight fault categories. For an observation, the likelihood model accounts for whether the inspected service is the hypothesized root, a caller, a callee, or unrelated.
-
-Belief updates follow:
-
-```math
-P(h \mid e) \propto P(e \mid h)P(h)
-```
-
-Probe selection aims to maximize:
-
-```math
-\mathrm{EIG}(q)
-= \mathcal{H}(H)
-- \mathbb{E}_{o \sim P(o \mid q)}
-  [\mathcal{H}(H \mid o,q)]
-```
-
-Here, `H` is the current distribution over hypotheses, `q` is a candidate probe, and `o` is a possible observation. The prototype enumerates binary tag outcomes to compute this quantity under its likelihood model.
-
-The calculation depends on modeling assumptions. Correlated evidence can make Naive Bayes overconfident, so calibration and held-out evaluation are part of the research plan.
-
-## Benchmark design
-
-### Initial service topology
-
-Arrows indicate calls from a service to its dependency. Failures can propagate back to callers.
-
-```mermaid
-flowchart TD
-    gateway --> auth
-    gateway --> orders
-    gateway --> search
-    orders --> payments
-    orders --> inventory
-    orders --> postgres
-    payments --> postgres
-    inventory --> postgres
-    inventory --> cache
-    search --> cache
-    auth --> cache
-```
-
-The initial system includes `gateway`, `auth`, `orders`, `payments`, `inventory`, `search`, `cache`, and `postgres`. Configurable graphs and held-out topology evaluation are later milestones.
-
-### Incident categories
-
-Each incident has one labeled root service and fault type. The prototype builds 120 minutes of metrics, logs, change events, health information, and sampled traces.
-
-| Fault | Characteristic investigation signals | Initial fix action |
+| Component | Delivered behavior | Evidence |
 |---|---|---|
-| Bad deploy | Recent release, exceptions, increased errors | Roll back deployment |
-| Configuration regression | Configuration change, pool exhaustion or rate limiting | Revert configuration |
-| Resource leak | Memory growth, restarts, out-of-memory signals | Roll back deployment |
-| Dependency outage | Unreachable dependency, failed health, caller timeouts | Fail over dependency |
-| Certificate expiry | TLS failures, expired certificate health | Renew certificate |
-| Traffic surge | Request growth, capacity pressure, load shedding | Scale up |
-| Feature-flag flip | Recent flag change, slow gated handlers | Disable flag |
-| Bad database migration | Migration event, lock contention, blocked queries | Roll back migration |
+| Browser workbench | Select a frozen or generated case; inspect telemetry; submit a diagnosis and reveal the answer | [App](app.py), [web tests](tests/test_web.py) |
+| Incident generator | Eight fault categories, one root cause, 120 minutes of telemetry, JSON serialization | [Generator](src/inquest/scenario.py), [example](examples/generate_incident.py) |
+| Frozen inputs | 120 saved cases in nine sets, provenance manifest and SHA-256 verification | [Data guide](datasets/README.md), [loader tests](tests/test_frozen.py) |
+| Investigation environment | Eight read-only tools, charged attempts, observation IDs and detached transcripts | [Tool contract](docs/TOOLS.md), [environment tests](tests/test_env.py) |
+| Report grader | Service, fault and fix checks; malformed-report handling; citation validation; Brier loss | [Grading contract](docs/GRADING.md), [grader tests](tests/test_grader.py) |
 
-These signatures are synthetic and deliberately controlled. Fixes initially specify an action and target service; configuration keys, rollback versions, and other operational parameters require richer grading.
+The investigation example uses five predetermined queries. The grading example uses two handcrafted reports. Neither is an autonomous-agent result or an accuracy claim.
 
-### Difficulty and data splits
+## Quick start
 
-Difficulty changes the quality and ambiguity of available evidence:
-
-- **Easy:** dense fault signals with limited distractors.
-- **Medium:** more decoy changes, benign anomalies, and some missing or misleading evidence.
-- **Hard:** sparse logs, unrecorded changes, unrelated fault-like symptoms, and frequent misleading peer attribution.
-
-| Split | Intended role | What changes |
-|---|---|---|
-| `dev` | Likelihood fitting, tuning, and training | Development seeds |
-| `test` | Held-out evaluation within the generator | Separate seed offset |
-| `ood` | Log-wording robustness | Separate seeds and alternate signal-log templates |
-
-The existing `ood` design retains the same topology and incident mechanisms. Its rule tagger was written with both wording families visible. Rule-tagger performance on this split cannot establish language generalization.
-
-### Frozen evaluation inputs
-
-[`inquest-smoke-v1`](datasets/README.md) publishes 120 serialized incidents across development, test, and alternate-wording splits at all three difficulties. Each development set has eight cases; each test/alternate-wording set has sixteen. Fault categories are balanced within each set.
-
-The JSONL files are accompanied by a provenance manifest and SHA-256 checksums. Load these committed bytes for comparisons instead of regenerating cases from seeds. The loader rejects mismatched checksums before parsing and checks case count, identity, order, and set settings. This establishes stable evaluation inputs without depending on cross-version RNG behavior.
-
-This suite supplies small initial comparison fixtures. It is not sufficient for strong performance claims or reliable likelihood fitting, and it contains no agent results. Labels and construction metadata must remain on the evaluator side. See the [data guide](datasets/README.md) for verification commands, interpretation limits, and version policy.
-
-### Investigation tools
-
-The implemented environment exposes eight read-only tools. Every attempted call consumes a step, including invalid calls. Observations have sequential IDs and detached transcript records. The [tool guide](docs/TOOLS.md) explains arguments, derived signals, record limits, replay behavior, and the observation boundary.
-
-| Tool | Information available |
-|---|---|
-| `list_services` | Service inventory and call dependencies |
-| `get_alerts` | Firing alerts, derived threshold-crossing times, and current values |
-| `query_metric` | Metric summaries, baseline/recent comparisons, and deviations |
-| `search_logs` | Recent log lines filtered by service, severity, and literal substring |
-| `get_events` | Deployment, configuration, flag, and migration events |
-| `get_event` | Details of a selected change event |
-| `health_check` | Service health, version, restarts, and certificate lifetime |
-| `get_trace` | Deterministic cycling through matching traces from the last 40 minutes |
-
-A stronger result should explain what the agent learned from these observations, not only report that it selected the correct answer.
-
-Tool observations omit construction labels, seeds, scenario IDs, and gold metadata. Trace selection uses a fixed time window rather than true incident onset. The environment snapshots permitted telemetry and does not retain the full construction bundle. This is an observation interface, not an isolation mechanism for untrusted Python code or an assurance against memorizing public data.
-
-## Agent comparisons
-
-The integration plan includes both offline and LLM agents.
-
-| Agent | Investigation policy | Purpose |
-|---|---|---|
-| Random probe | Random unused queries with the same belief updater | Measure the benefit of informed probe choice |
-| Deepest alert | Inspect the most downstream alerting service | Simple operational heuristic |
-| Bayesian reference | Rule perception, belief updates, information-gain probes | Oracle-perception reference |
-| Noisy Bayesian reference | Simulated missed and spurious tags | Study sensitivity to perception errors |
-| Noise-aware Bayesian reference | Likelihoods fitted under the same simulated noise | Study robustness to perception mismatch |
-| ReAct | LLM selects tools and submits the report | Free-form agent comparison |
-| Structured LLM | LLM extracts tags; explicit reasoner selects probes | Test the perception/reasoning decomposition |
-
-Shared incident cases, budgets, and documented system knowledge are required for useful comparisons. A rule-perception result is a reference point for the reasoning system; real-model runs are needed to evaluate the end-to-end LLM agents.
-
-## Evaluation protocol
-
-### Report contract
-
-The following is an **illustrative report**, not a measured experiment result:
-
-```json
-{
-  "service": "postgres",
-  "fault_type": "bad_migration",
-  "fix": {
-    "action": "rollback_migration",
-    "target": "postgres"
-  },
-  "evidence": ["o3", "o7"],
-  "confidence": 0.84,
-  "summary": "Lock contention followed the migration and propagated to callers."
-}
-```
-
-Evidence refers to observation IDs in the investigation transcript. The implemented grader validates required fields, confidence, and references against the saved transcript. It records field errors and separate component-accuracy checks; accepted joint success requires a valid report and a matching service, fault, and fix. The [grading guide](docs/GRADING.md) defines the API, metrics, failure semantics, and relevance limits.
-
-### Measures
-
-| Measure | What it evaluates | Interpretation limit |
-|---|---|---|
-| Service accuracy | Correct initiating service | Initial incidents contain one root cause |
-| Fault accuracy | Correct fault category | Categories are fixed in the initial design |
-| Fix accuracy | Correct action and target | Initial grading omits operational parameters |
-| Joint success | Valid report with matching service, fault, and fix | Reference validity does not establish claim-level support |
-| Coarse evidence relevance | Gold tool/service relevance among counted citations | Invalid IDs remain in the denominator; text or line-level support is planned |
-| Brier score | Confidence versus accepted joint success | Invalid confidence is recorded as unavailable; calibration needs held-out assessment |
-| Investigation steps | Number of tool calls | Initial tools have uniform step cost |
-| Token usage and runtime | Resource use | Observation-token estimates and actual LLM usage must be distinguished |
-
-Success proportions will include confidence intervals. Failed runs, invalid outputs, and agent exceptions will be retained in the evaluation record.
-
-### Reproduction requirements
-
-Each published experiment should provide:
-
-1. The code revision and exact command or configuration.
-2. The scenario split, difficulty, seed range, and frozen incident set.
-3. Agent settings, step budget, and prompt version.
-4. The likelihood-model checksum and, for LLM runs, the model identity and backend.
-5. Raw episode scores, errors, transcripts, and resource usage.
-6. Generated summaries and plots with a reproduction command.
-7. Representative failures and the limits of the conclusion.
-
-The [roadmap](docs/ROADMAP.md) tracks implementation of these artifacts. **This branch does not yet publish a validated result table.** Existing local prototype results will be integrated only with their provenance and interpretation limits.
-
-## Getting started
-
-### Browser workbench
-
-The web app lets visitors inspect the existing eight-service incidents without an API key. It loads SHA-256-verified frozen cases or generates a scenario from a seed, displays the service graph, metrics, logs, changes, traces, and health, then reveals the labeled answer after a visitor submits a diagnosis. The initial incident response excludes construction labels and metadata. The browser is an educational workbench with unrestricted telemetry browsing and answer reveal. The separate Python investigation environment enforces tool budgets and provides evaluator-side report grading. Agent comparisons and validated benchmark results remain planned.
-
-Run it locally after installing the package:
-
-```bash
-python3.14 -m venv .venv
-source .venv/bin/activate
-python -m pip install -e ".[dev]"
-python app.py
-```
-
-Open `http://127.0.0.1:8000`. The repository is ready for a Python web deployment on Vercel: `app.py` is the Flask entrypoint, `public/` contains the browser assets, and `.python-version` selects Python 3.14 to match the verified generator environment. Deploying from the Git repository does not require keys or a separate database.
-
-**Verified environment: Python 3.14.** Installation, all four examples, and all 243 tests have been checked locally on that version. Python 3.10+ is the compatibility target declared in package metadata; versions 3.10–3.13 have not yet been tested. A version matrix is planned in milestone 09.
-
-Use Python 3.14 for the currently verified setup:
+Use Python 3.14 for the locally verified setup:
 
 ```bash
 git clone https://github.com/Pranjal677504/Inquest.git
@@ -286,6 +30,14 @@ cd Inquest
 python3.14 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e ".[dev]"
+python app.py
+```
+
+Open `http://127.0.0.1:8000`. On Windows, use `py -3.14 -m venv .venv` and `.venv\Scripts\Activate.ps1`; Windows execution has not been verified.
+
+For the Python examples and tests:
+
+```bash
 python examples/generate_incident.py
 python examples/load_frozen_set.py
 python examples/inspect_incident.py
@@ -293,104 +45,77 @@ python examples/grade_report.py
 python -m pytest -q
 ```
 
-On Windows, create the environment with `py -3.14 -m venv .venv` and activate it with `.venv\Scripts\Activate.ps1` in PowerShell; Windows execution has not yet been verified. The example constructs `dev-easy-7`: a database migration incident with eight services, 120 minutes of telemetry, two events, and 60 sampled traces. It serializes and reloads the complete bundle, verifies equality, and prints a SHA-256 fingerprint.
+**Dependencies:** the generator, loader, tools, and grader use the Python standard library. Installing the distribution also installs **Flask**, which runs the bundled web application. Tests use pytest. The current features require no model, provider key, or database. Future hosted-model experiments would need credentials; local-model experiments would need a model server and suitable compute.
 
-You can also construct scenarios through Python:
+**Python support:** package metadata targets Python 3.10+. Locally, installation, all four examples, and 243 tests have passed on Python 3.14. [CI](https://github.com/Pranjal677504/Inquest/actions/workflows/tests.yml) runs those checks on Python 3.10–3.14 on Linux; consult the workflow results for verified revisions. A configured matrix alone is not evidence of a pass. The hosted demo selects Python 3.14 in [`.python-version`](.python-version).
+
+## A budgeted investigation
 
 ```python
-from inquest import Scenario, generate, iter_scenarios
+from pathlib import Path
+from inquest.env import InvestigationEnv
+from inquest.frozen import load_frozen_set
 
-incident = generate(seed=7, difficulty="easy", split="dev")
-restored = Scenario.from_json(incident.to_json())
-assert incident == restored
+# Evaluator-side setup: retain the labeled scenario outside the agent interface.
+scenario = load_frozen_set(Path("datasets/smoke-v1"), "test-easy")[7]
+env = InvestigationEnv(scenario, max_steps=5)
 
-cases = list(iter_scenarios("test", n=8, difficulty="hard", start=0))
+alerts = env.call("get_alerts")
+print(alerts.id, alerts.text)
+print("Steps remaining:", env.steps_left)
 ```
 
-The generator uses only the Python standard library and needs **no API key**. Tests use pytest. NumPy will be introduced with the offline reasoner. Hosted LLM backends will require provider credentials; a local model server can provide an alternative when suitable compute is available.
+Available tools: `list_services`, `get_alerts`, `query_metric`, `search_logs`, `get_events`, `get_event`, `health_check`, and `get_trace`. Every attempted call consumes a step, including invalid requests. See [arguments, limits, and observation behavior](docs/TOOLS.md).
 
-**Construction bundles contain ground truth**, including the root service, fault, and expected fix. The generation example prints those labels for inspection. `inspect_incident.py` instead prints five predetermined tool observations from a frozen case, without construction labels. It is a manual walkthrough. `grade_report.py` scores two handcrafted report fixtures against the frozen case and records suite provenance; its chosen confidence values and predictions are examples. Autonomous policies and performance evaluation remain planned.
+Reports name a service, fault type, fix action and target, observation IDs, and confidence. The [grader](docs/GRADING.md) separates diagnosis correctness from report validity. It rejects malformed confidence and invalid references rather than silently repairing them. Evidence relevance currently checks tool/service matches; it does **not** establish that the cited text supports a claim.
 
-Seeds must be non-negative integers; supported difficulties are `easy`, `medium`, and `hard`, and splits are `dev`, `test`, and `ood`. JSON loading checks required bundle fields, labeled outcomes, metric dimensions and finite values, log records, event records, and trace records. Generation uses its own random-number generator without changing global random state. Byte-for-byte seed reproducibility is tested within the same Python runtime; cross-version fingerprints are not guaranteed. Use the [checksummed frozen files](datasets/README.md) as the canonical inputs for published comparisons.
-
-### Current repository layout
-
-```text
-Inquest/
-├── README.md                  Project design and status
-├── LICENSE                    MIT license
-├── pyproject.toml             Package and test configuration
-├── .python-version            Hosted Python runtime selection
-├── app.py                     Web workbench and incident API
-├── public/                    Browser interface and assets
-├── .gitignore                 Generated files and credentials excluded
-├── .gitattributes             Text normalization
-├── src/inquest/
-│   ├── __init__.py             Public construction API
-│   ├── topology.py             Service graph and shortest-hop queries
-│   ├── scenario.py             Telemetry generation and JSON bundles
-│   ├── frozen.py               Checksum-verified frozen set loader
-│   ├── env.py                  Budgeted telemetry tools and observations
-│   └── grader.py               Report validation and evaluator-side scores
-├── tests/
-│   ├── test_topology.py        Graph behavior and invalid service checks
-│   ├── test_scenario.py        Fault coverage, replay, propagation, and validation
-│   ├── test_frozen.py          Saved cases, corruption checks, and no-RNG loading
-│   ├── test_env.py             Tool behavior, budgets, replay, and label exclusion
-│   ├── test_web.py             API isolation, diagnosis, and input bounds
-│   └── test_grader.py          Report failures, confidence, and citation accounting
-├── examples/
-│   ├── generate_incident.py    Runnable construction and replay example
-│   ├── load_frozen_set.py      Verify and load published incident files
-│   ├── inspect_incident.py     Manual five-probe investigation walkthrough
-│   └── grade_report.py         Handcrafted grading demo with frozen provenance
-├── datasets/
-│   ├── README.md              Data guide and version policy
-│   └── smoke-v1/              Nine JSONL sets, manifest, and SHA256SUMS
-└── docs/
-    ├── DESIGN.md              Decisions, rationale, and trade-offs
-    ├── TOOLS.md               Tool contract and observation boundary
-    ├── GRADING.md             Report contract, scores, and evidence limits
-    ├── ROADMAP.md             Milestones and acceptance criteria
-    └── DEVELOPMENT_LOG.md     Completed work and verification
+```mermaid
+flowchart LR
+    F[Frozen labeled incident] --> E[Budgeted tools]
+    E --> O[Observations and transcript]
+    O --> R[Investigator report]
+    F --> G[Evaluator-side grader]
+    R --> G
+    O --> G
 ```
 
-Planned additions include agents, a CLI, experiment artifacts, CI workflows, and a benchmark card. The layout will be updated as those components become available.
+The browser is an unrestricted educational interface with answer reveal. Scored agents must use the budgeted observation interface, not the browser's case-selection metadata or diagnosis endpoint. Construction labels, seeds, scenario IDs, and gold metadata are excluded from tool observations. This boundary is not a sandbox against hostile Python code or memorization of public fixtures.
 
-## Development roadmap
+## Data and interpretation limits
 
-| Phase | Milestones | Deliverable |
-|---|---|---|
-| Foundation | 01–05 | Incident bundles, tools, grading, and safe replay commands |
-| Investigation | 06–10 | Belief tracking, offline agents, reproducible evaluation, packaging, and transcript inspection |
-| Research evidence | 11–16 | LLM integration, real-model pilot, failure analysis, calibration, authored incidents, and topology variation |
-| Showcase and release | 17–18 | Reproducible figures, walkthrough, benchmark card, and verified release |
+[`inquest-smoke-v1`](datasets/README.md) contains 120 synthetic cases across `dev`, `test`, and `ood`, at three difficulties. Use `load_frozen_set` to verify and load the committed bytes. Do not regenerate comparison inputs from seeds: cross-version RNG equivalence is not guaranteed. Published suites are immutable; additions require a new version.
 
-The repository foundation and incident bundles were completed on **6 October 2026**, followed by the investigation tools on **7 October 2026** and report grading on **8 October 2026**. Checked milestones correspond to recorded implementation and verification; remaining milestones describe future development. The [development log](docs/DEVELOPMENT_LOG.md) records actual changes, verification, and limitations.
+- The graph, eight fault categories, and handcrafted signatures are fixed. Recognizing those signatures can be easier than conducting an investigation.
+- The `ood` split changes signal-log wording, not topology or failure mechanisms. It is not evidence of production generalization.
+- The small public smoke suite is for interface checks, not sufficient likelihood training or strong performance claims.
+- Gold tool/service relevance and fix action/target matches are coarse measures. Confidence scoring is implemented; calibration has not been demonstrated.
+- No independent authored holdouts, fitted likelihood artifacts, or real-model result table are published yet.
 
-### Project ownership and design decisions
+## Research direction and related work
 
-**Maintainer: Pranjal Prajapati.** The maintainer sets project scope and priorities and is responsible for accepting design changes, reviewing evidence, and deciding when a release is ready. Contribution reviews should include the reason for a choice, its alternatives, and its limitations.
+Replayability is established practice in incident benchmarks. [Cloud-OpsBench, OpenRCA, AIOpsLab, ITBench, ORCA-bench, and OpenRCA 2.0](docs/RELATED_WORK.md) provide relevant prior work with stronger operational or causal coverage. Their results are not directly comparable with this small synthetic suite.
 
-The [design notes](docs/DESIGN.md) explain the current implementation choices and distinguish them from planned agent architecture. They provide a basis for technical discussion and review as the project evolves.
+Inquest's proposed experiments ask whether **information-gain probe selection**, **confidence calibration**, and **success under equal investigation budgets** improve over simpler policies. Those are questions to test, not demonstrated advantages or claims of novelty. The [design notes](docs/DESIGN.md) explain the proposed belief model and its assumptions.
 
-## Known limitations
+Next priorities are independently authored cases and an actual local-model pilot with saved transcripts, failures, and usage. These precede convenience CLI work; the full structured-agent comparison still depends on implementing and validating the reasoner. [Acceptance criteria and prerequisites](docs/ROADMAP.md) define what must exist before results can be claimed.
 
-- **Generator coupling:** A reasoner fitted on the same handcrafted generator may exploit its patterns.
-- **Oracle perception:** A rule tagger knows the authored signal vocabulary.
-- **Restricted initial scope:** One topology, one root cause per incident, and eight fault categories simplify investigation.
-- **Confidence assumptions:** Correlated tags violate the reasoner's independence assumption.
-- **Coarse evidence and fixes:** Tool/service relevance and action/target matches do not establish complete operational support.
-- **External validity:** Synthetic success requires independent incident validation before drawing conclusions about production use.
+## Repository guide
 
-These limitations motivate the holdout incidents, calibration, evidence-support checks, and topology shifts in the roadmap.
+| Path | Contents |
+|---|---|
+| [`src/inquest/`](src/inquest) | Generator, topology, frozen loader, tools, and grader |
+| [`app.py`](app.py), [`public/`](public) | Flask API and browser assets |
+| [`examples/`](examples) | Four runnable API demonstrations |
+| [`tests/`](tests), [CI workflow](.github/workflows/tests.yml) | Behavior checks, data integrity, and Python compatibility |
+| [`datasets/`](datasets) | Versioned frozen cases and provenance |
+| [`docs/`](docs) | Contracts, design rationale, related work, roadmap, and dated verification |
 
-## Contributing
+## Development and ownership
 
-Useful contributions include reproducible bug reports, independently authored incident cases, stronger comparison agents, and evaluation improvements.
+This repository integrates and improves an existing local Inquest prototype. The [development log](docs/DEVELOPMENT_LOG.md) records actual changes and verification dates; the [design notes](docs/DESIGN.md) distinguish implemented decisions from proposed ones.
 
-Use [GitHub issues](https://github.com/Pranjal677504/Inquest/issues) to discuss a change and relate it to a roadmap milestone. Explain the behavior being changed, provide a focused reproduction or example, and include appropriate validation with a pull request. Report limitations alongside experimental improvements.
+**Maintainer: Pranjal Prajapati.** The maintainer sets priorities, accepts design changes, reviews evidence, and decides releases. Contributions should include a focused reproduction, a reason for the change, and appropriate validation. Use [issues](https://github.com/Pranjal677504/Inquest/issues) to discuss independently authored cases, bugs, or evaluation improvements.
 
 ## License
 
-InquestBench is available under the [MIT license](LICENSE).
+[MIT](LICENSE).
