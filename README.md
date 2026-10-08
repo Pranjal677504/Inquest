@@ -8,7 +8,7 @@ An agent receives an incident and a limited investigation budget. It queries tel
 
 [Architecture](#architecture) · [Benchmark design](#benchmark-design) · [Frozen sets](datasets/README.md) · [Agents](#agent-comparisons) · [Evaluation](#evaluation-protocol) · [Roadmap](docs/ROADMAP.md) · [Development log](docs/DEVELOPMENT_LOG.md)
 
-> **Development preview:** The service topology, incident generator, checksum-verified frozen loading, and eight budgeted investigation tools are implemented, with runnable examples and tests. Nine frozen sets containing 120 cases are published in [`datasets/`](datasets/README.md). Grading, agents, and evaluation are being integrated from an existing local Inquest prototype. Those sections below describe the intended implementation; no end-to-end agent results are published yet.
+> **Development preview:** The service topology, incident generator, checksum-verified frozen loading, eight budgeted investigation tools, and report grading are implemented, with runnable examples and tests. Nine frozen sets containing 120 cases are published in [`datasets/`](datasets/README.md). Agents and evaluation are being integrated from an existing local Inquest prototype. Those sections below describe the intended implementation; no end-to-end agent results are published yet.
 
 ## Why incident investigation?
 
@@ -228,7 +228,7 @@ The following is an **illustrative report**, not a measured experiment result:
 }
 ```
 
-Evidence refers to observation IDs in the investigation transcript. The grader should treat malformed or unsupported reports explicitly rather than silently interpreting them as reliable answers.
+Evidence refers to observation IDs in the investigation transcript. The implemented grader validates required fields, confidence, and references against the saved transcript. It records field errors and separate component-accuracy checks; accepted joint success requires a valid report and a matching service, fault, and fix. The [grading guide](docs/GRADING.md) defines the API, metrics, failure semantics, and relevance limits.
 
 ### Measures
 
@@ -237,9 +237,9 @@ Evidence refers to observation IDs in the investigation transcript. The grader s
 | Service accuracy | Correct initiating service | Initial incidents contain one root cause |
 | Fault accuracy | Correct fault category | Categories are fixed in the initial design |
 | Fix accuracy | Correct action and target | Initial grading omits operational parameters |
-| Joint success | Service, fault, and fix all match | Offline agents derive the fix from their service/fault prediction |
-| Evidence precision | Relevance of cited observations | Prototype grading uses tool/service relevance; line-level support is planned |
-| Brier score | Confidence versus actual joint success | Calibration needs held-out assessment |
+| Joint success | Valid report with matching service, fault, and fix | Reference validity does not establish claim-level support |
+| Coarse evidence relevance | Gold tool/service relevance among counted citations | Invalid IDs remain in the denominator; text or line-level support is planned |
+| Brier score | Confidence versus accepted joint success | Invalid confidence is recorded as unavailable; calibration needs held-out assessment |
 | Investigation steps | Number of tool calls | Initial tools have uniform step cost |
 | Token usage and runtime | Resource use | Observation-token estimates and actual LLM usage must be distinguished |
 
@@ -263,7 +263,7 @@ The [roadmap](docs/ROADMAP.md) tracks implementation of these artifacts. **This 
 
 ### Browser workbench
 
-The web app lets visitors inspect the existing eight-service incidents without an API key. It loads SHA-256-verified frozen cases or generates a scenario from a seed, displays the service graph, metrics, logs, changes, traces, and health, then reveals the labeled answer after a visitor submits a diagnosis. The initial incident response excludes construction labels and metadata. The browser is an educational workbench with unrestricted telemetry browsing and answer reveal. The separate Python investigation environment enforces tool budgets; report grading, agent comparisons, and validated benchmark results remain planned.
+The web app lets visitors inspect the existing eight-service incidents without an API key. It loads SHA-256-verified frozen cases or generates a scenario from a seed, displays the service graph, metrics, logs, changes, traces, and health, then reveals the labeled answer after a visitor submits a diagnosis. The initial incident response excludes construction labels and metadata. The browser is an educational workbench with unrestricted telemetry browsing and answer reveal. The separate Python investigation environment enforces tool budgets and provides evaluator-side report grading. Agent comparisons and validated benchmark results remain planned.
 
 Run it locally after installing the package:
 
@@ -276,7 +276,7 @@ python app.py
 
 Open `http://127.0.0.1:8000`. The repository is ready for a Python web deployment on Vercel: `app.py` is the Flask entrypoint, `public/` contains the browser assets, and `.python-version` selects Python 3.14 to match the verified generator environment. Deploying from the Git repository does not require keys or a separate database.
 
-**Verified environment: Python 3.14.** Installation, all three examples, and all 180 tests have been checked locally on that version. Python 3.10+ is the compatibility target declared in package metadata; versions 3.10–3.13 have not yet been tested. A version matrix is planned in milestone 09.
+**Verified environment: Python 3.14.** Installation, all four examples, and all 243 tests have been checked locally on that version. Python 3.10+ is the compatibility target declared in package metadata; versions 3.10–3.13 have not yet been tested. A version matrix is planned in milestone 09.
 
 Use Python 3.14 for the currently verified setup:
 
@@ -289,6 +289,7 @@ python -m pip install -e ".[dev]"
 python examples/generate_incident.py
 python examples/load_frozen_set.py
 python examples/inspect_incident.py
+python examples/grade_report.py
 python -m pytest -q
 ```
 
@@ -308,7 +309,7 @@ cases = list(iter_scenarios("test", n=8, difficulty="hard", start=0))
 
 The generator uses only the Python standard library and needs **no API key**. Tests use pytest. NumPy will be introduced with the offline reasoner. Hosted LLM backends will require provider credentials; a local model server can provide an alternative when suitable compute is available.
 
-**Construction bundles contain ground truth**, including the root service, fault, and expected fix. The generation example prints those labels for inspection. `inspect_incident.py` instead prints five predetermined tool observations from a frozen case, without construction labels. It is a manual walkthrough; autonomous policies and report grading remain planned.
+**Construction bundles contain ground truth**, including the root service, fault, and expected fix. The generation example prints those labels for inspection. `inspect_incident.py` instead prints five predetermined tool observations from a frozen case, without construction labels. It is a manual walkthrough. `grade_report.py` scores two handcrafted report fixtures against the frozen case and records suite provenance; its chosen confidence values and predictions are examples. Autonomous policies and performance evaluation remain planned.
 
 Seeds must be non-negative integers; supported difficulties are `easy`, `medium`, and `hard`, and splits are `dev`, `test`, and `ood`. JSON loading checks required bundle fields, labeled outcomes, metric dimensions and finite values, log records, event records, and trace records. Generation uses its own random-number generator without changing global random state. Byte-for-byte seed reproducibility is tested within the same Python runtime; cross-version fingerprints are not guaranteed. Use the [checksummed frozen files](datasets/README.md) as the canonical inputs for published comparisons.
 
@@ -329,28 +330,32 @@ Inquest/
 │   ├── topology.py             Service graph and shortest-hop queries
 │   ├── scenario.py             Telemetry generation and JSON bundles
 │   ├── frozen.py               Checksum-verified frozen set loader
-│   └── env.py                  Budgeted telemetry tools and observations
+│   ├── env.py                  Budgeted telemetry tools and observations
+│   └── grader.py               Report validation and evaluator-side scores
 ├── tests/
 │   ├── test_topology.py        Graph behavior and invalid service checks
 │   ├── test_scenario.py        Fault coverage, replay, propagation, and validation
 │   ├── test_frozen.py          Saved cases, corruption checks, and no-RNG loading
 │   ├── test_env.py             Tool behavior, budgets, replay, and label exclusion
-│   └── test_web.py             API isolation, diagnosis, and input bounds
+│   ├── test_web.py             API isolation, diagnosis, and input bounds
+│   └── test_grader.py          Report failures, confidence, and citation accounting
 ├── examples/
 │   ├── generate_incident.py    Runnable construction and replay example
 │   ├── load_frozen_set.py      Verify and load published incident files
-│   └── inspect_incident.py     Manual five-probe investigation walkthrough
+│   ├── inspect_incident.py     Manual five-probe investigation walkthrough
+│   └── grade_report.py         Handcrafted grading demo with frozen provenance
 ├── datasets/
 │   ├── README.md              Data guide and version policy
 │   └── smoke-v1/              Nine JSONL sets, manifest, and SHA256SUMS
 └── docs/
     ├── DESIGN.md              Decisions, rationale, and trade-offs
     ├── TOOLS.md               Tool contract and observation boundary
+    ├── GRADING.md             Report contract, scores, and evidence limits
     ├── ROADMAP.md             Milestones and acceptance criteria
     └── DEVELOPMENT_LOG.md     Completed work and verification
 ```
 
-Planned additions include report grading, agents, a CLI, experiment artifacts, CI workflows, and a benchmark card. The layout will be updated as those components become available.
+Planned additions include agents, a CLI, experiment artifacts, CI workflows, and a benchmark card. The layout will be updated as those components become available.
 
 ## Development roadmap
 
@@ -361,7 +366,7 @@ Planned additions include report grading, agents, a CLI, experiment artifacts, C
 | Research evidence | 11–16 | LLM integration, real-model pilot, failure analysis, calibration, authored incidents, and topology variation |
 | Showcase and release | 17–18 | Reproducible figures, walkthrough, benchmark card, and verified release |
 
-The repository foundation and incident bundles were completed on **6 October 2026**, followed by the investigation tools on **7 October 2026**. Checked milestones correspond to recorded implementation and verification; remaining milestones describe future development. The [development log](docs/DEVELOPMENT_LOG.md) records actual changes, verification, and limitations.
+The repository foundation and incident bundles were completed on **6 October 2026**, followed by the investigation tools on **7 October 2026** and report grading on **8 October 2026**. Checked milestones correspond to recorded implementation and verification; remaining milestones describe future development. The [development log](docs/DEVELOPMENT_LOG.md) records actual changes, verification, and limitations.
 
 ### Project ownership and design decisions
 

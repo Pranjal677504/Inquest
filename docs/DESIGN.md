@@ -33,6 +33,16 @@ Visitors choose a case, browse telemetry, and submit a service, fault, and recov
 
 Verification: the web branch passed 137 tests before integration; the combined web and tool implementation passed 180 tests on Python 3.14. Page/assets/config/health routes and the live frozen-case diagnosis flow were checked. The browser demo does not establish agent performance, evidence support, adversarial isolation, or production-scale capacity.
 
+## Report grading
+
+The prototype accuracy checks, Brier calculation, and gold tool/service mapping are retained in an evaluator-side grader. The labeled scenario is supplied explicitly alongside its paired environment; attaching labels back to the environment would undo the observation boundary. The trusted evaluator is responsible for pairing the same episode. Current in-process grading does not authenticate transcripts against hostile code.
+
+Strict field validation records invalid reports and reference errors. Invalid confidence remains unavailable rather than being coerced, clipped, or replaced with 0.5. This avoids silently manufacturing a probability; summaries must disclose missing confidence values. Component accuracy and `diagnosis_ok` remain visible for malformed submissions, while `success` requires a valid report and all predictions to match. Brier loss uses this accepted-success definition. Keeping diagnostic accuracy as the only success criterion would obscure interface failures; both outcomes are exposed so later analyses can distinguish them.
+
+Evidence scoring counts unique string references, retains unknown/failed/malformed references in the denominator, and grants coarse credit from returned services and authored gold tool classes. Repeated strings are deduplicated; each non-string malformed entry counts as invalid. Empty result records earn no relevance credit. Reference validity and relevance have separate outputs. Claim-level entailment or line-level support would be stronger and remains a later milestone; current relevance can credit benign text about a gold service.
+
+Verification: 243 tests on Python 3.14 include malformed nested values, non-finite confidence, missing evidence, citation failures and duplication, both fix fields, partial diagnoses, result JSON safety, and all 120 frozen cases with evaluator-authored fixtures. The grading example uses handcrafted predictions and assigned confidence, with suite/set/checksum/revision metadata; it establishes API behavior rather than agent performance.
+
 ## Planned investigation architecture
 
 | Planned choice | Why explore it | What must be established |
@@ -40,11 +50,11 @@ Verification: the web branch passed 137 tests before integration; the combined w
 | Perception separated from reasoning | Allows errors in interpreting telemetry to be studied separately from investigation policy | Scripted adapter tests and actual model comparisons on identical cases |
 | Naive Bayes over service/fault hypotheses | Provides a simple, inspectable belief update with development-data likelihood fitting | Normalized probabilities, dev-only fitting, and held-out calibration; correlated evidence can cause overconfidence |
 | Expected information gain for probe choice | Chooses observations expected to reduce uncertainty | Small fixtures with known answers and fair comparisons against random and operational heuristics |
-| Independent grading and saved transcripts | Makes reports and outcomes inspectable after a run | Malformed-report checks, valid observation references, and preservation of errors and failed episodes |
+| Saved experiment transcripts | Makes reasoning and outcomes inspectable after a run | Report grading is implemented; complete run artifacts and agent-exception preservation remain planned |
 
 ## Current verification boundary
 
-Installation, all three examples, and 180 tests were verified locally on Python 3.14. The package declares Python 3.10+ as a compatibility target, with a version matrix still pending. The manual investigation example makes predetermined queries; no autonomous agent evaluation, actual LLM comparison, or production validation has been published in this repository.
+Installation, all four examples, and 243 tests were verified locally on Python 3.14. The package declares Python 3.10+ as a compatibility target, with a version matrix still pending. The manual investigation example makes predetermined queries; no autonomous agent evaluation, actual LLM comparison, or production validation has been published in this repository.
 
 Byte-for-byte generation across Python versions is not guaranteed. The [published frozen suite](../datasets/README.md) is the common input for initial comparisons: readers load the recorded bytes and verify checksums without generating cases. It contains 120 synthetic incidents and is intended for small initial comparisons rather than statistical performance claims or likelihood training. Suite changes require a new version. The manifest has format version 1; individual scenario records still have no schema migration support.
 

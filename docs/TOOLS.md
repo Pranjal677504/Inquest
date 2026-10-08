@@ -10,7 +10,7 @@ After installing from the checkout:
 python examples/inspect_incident.py
 ```
 
-This is a scripted manual walkthrough of a database incident, not an autonomous agent or a scored benchmark run. It makes five predetermined queries and prints their observations. Report grading and investigation policies are later milestones.
+This is a scripted manual walkthrough of a database incident, not an autonomous agent or a scored benchmark run. It makes five predetermined queries and prints their observations. Evaluator-side report grading is available in the [grading guide](GRADING.md). Autonomous investigation policies remain planned.
 
 Python usage on the evaluator side:
 
@@ -84,4 +84,4 @@ This is an observation-level boundary, **not a sandbox against Python reflection
 
 ## Verification
 
-Tests exercise all eight tools across all 120 published incidents. Additional checks cover charged invalid calls, exhausted/zero budgets, record limits, literal filters, full three-sample alert windows, deterministic trace cycling after JSON reload, detached observations, and independence from construction labels and extra metadata fields. The full suite currently passes 178 tests on Python 3.14. Other Python versions remain unverified.
+Tests exercise all eight tools across all 120 published incidents. Additional checks cover charged invalid calls, exhausted/zero budgets, record limits, literal filters, full three-sample alert windows, deterministic trace cycling after JSON reload, detached observations, and independence from construction labels and extra metadata fields. The full suite currently passes 243 tests on Python 3.14. Other Python versions remain unverified.

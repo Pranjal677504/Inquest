@@ -68,6 +68,18 @@ Integrated that updated `main` into the tool branch without rewriting either bra
 
 Combined verification on Python 3.14: 180 tests passed; all three examples ran from outside the checkout; all ten frozen checksum entries passed. The published suite bytes remain unchanged. Integration supplies the missing deployment entry point; the new hosted preview and merge status are recorded in the linked PR.
 
+## 2026-10-08 — Report grading
+
+Completed milestone 04 by integrating the prototype's `src/inquest/grader.py` accuracy checks, gold tool/service relevance mapping, Brier calculation, and evaluator metadata. The labeled scenario now goes to the grader explicitly; the tool environment continues to hold telemetry only. Added structural report validation, reference checks against saved successful observations, citation accounting, and separate component correctness, diagnosis correctness, report validity, and accepted joint success.
+
+Invalid confidence is reported as unavailable, with no numeric-string coercion, clipping, or default. Unknown, malformed, and failed-call citations remain in the evidence denominator; repeated strings count once. Empty log/event/trace results earn no relevance credit. Event and trace services are derived from returned records rather than query arguments. Added a grading guide and a runnable two-report demonstration that identifies the frozen suite, set, checksum, repository revision, and uncommitted state. Predictions and confidence in this demonstration are handcrafted fixtures.
+
+Verification on Python 3.14: installed the package and development dependencies in a fresh isolated environment; `python -m pytest -q` passed 243 tests. The 63 additional test cases cover exact and partial predictions, action/target mismatches, empty and malformed reports, required fields, non-finite and out-of-range confidence, unknown/malformed/duplicate citations, failed calls, empty results, event/trace relevance, input immutability, evaluator misuse, and JSON-safe output. Evaluator-authored correct-report fixtures were scored over all 120 committed frozen cases. All four examples ran from outside the checkout; the new example produced accepted success for the valid report and an explicit invalid-reference failure for the second. All ten frozen checksum entries passed. The dataset files remain unchanged.
+
+Limitations: evidence scores still check authored tool/service relevance rather than claim support; existing irrelevant citations can be valid references. Fixes check action and target, with operational parameters unscored. Brier loss concerns accepted joint success and does not establish calibration. Invalid-confidence missingness must be disclosed in future summaries. The evaluator must pair the scenario and transcript from the same episode. The example and test fixtures are not agent accuracy results. Only Python 3.14 has been verified locally.
+
+Next milestone: safe bundle generation and replay commands.
+
 ## How to read this log
 
 Entries use the date on which work occurred. Multiple changes on one day appear together. Each entry identifies the affected milestone, origin of integrated components, verification evidence, limitations, and next planned capability.
