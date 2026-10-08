@@ -29,6 +29,8 @@ Pranjal Prajapati is the project maintainer. The maintainer sets scope and prior
 
 The Flask workbench exposes the existing incident generator and verified frozen cases through a small API and static browser interface. A root-level `app.py` supplies the deployment entry point; `.python-version` selects the locally verified Python 3.14 runtime. An API plus static assets keeps the demo inspectable without a database or model credentials. A separate frontend framework would add a build pipeline and more dependencies without being required for the current interaction.
 
+The core modules use the standard library, but the installed distribution requires Flask because it includes this web application. Keeping Flask in runtime dependencies also supplies the automatic Flask deployment with its framework. Splitting the demo into an optional package is possible later, with explicit deployment dependency checks; the current package is not dependency-free.
+
 Visitors choose a case, browse telemetry, and submit a service, fault, and recovery action to reveal the construction label. This educational flow permits unrestricted browsing and answer reveal. Automated benchmark agents use the separate budgeted Python tool interface; future scored experiments must not consume the browser API's selection metadata or answer endpoint.
 
 Verification: the web branch passed 137 tests before integration; the combined web and tool implementation passed 180 tests on Python 3.14. Page/assets/config/health routes and the live frozen-case diagnosis flow were checked. The browser demo does not establish agent performance, evidence support, adversarial isolation, or production-scale capacity.
@@ -52,9 +54,31 @@ Verification: 243 tests on Python 3.14 include malformed nested values, non-fini
 | Expected information gain for probe choice | Chooses observations expected to reduce uncertainty | Small fixtures with known answers and fair comparisons against random and operational heuristics |
 | Saved experiment transcripts | Makes reasoning and outcomes inspectable after a run | Report grading is implemented; complete run artifacts and agent-exception preservation remain planned |
 
+### Belief updates and information gain: proposed, not implemented here
+
+For a service/fault hypothesis `h`, evidence `e`, and a query `q`, Bayes' rule updates the prior with a likelihood. A Naive Bayes model would factor evidence-tag likelihoods under conditional independence. That makes a small model inspectable, but repeated or correlated telemetry can count the same signal more than once and inflate confidence. Alternatives include a simple signature classifier, a discriminative model, and a model of joint tag outcomes. Comparisons must include the simple classifier rather than assume investigation is necessary.
+
+Let `b(h)` be the current belief and `z` a possible tag outcome of a query. A fitted model must define `P(z | h, q)`. It implies the predictive distribution `P(z | q) = sum_h b(h) P(z | h, q)` and the posterior `b_z(h) = b(h) P(z | h, q) / P(z | q)` for nonzero-probability outcomes. Expected information gain is the reduction in entropy averaged over these possible outcomes:
+
+```math
+\mathrm{EIG}(q) = \mathcal{H}(b) - \sum_z P(z \mid q)\mathcal{H}(b_z).
+```
+
+The expectation is over modeled outcomes, not an observation already received. A probe independent of `h` has zero gain; a perfectly discriminating probe can remove all current uncertainty. Enumerating binary tags assumes a defined finite outcome space and can grow exponentially. EIG measures uncertainty under the fitted model, not guaranteed causal usefulness, correctness, or cost savings. Equal-cost tools are the initial setting; unequal costs would require a separately justified decision rule.
+
+No fitted likelihood artifact has been published in this repository. Integration must record development-only counts, priors, smoothing, tag definitions, training checksums, and an artifact checksum. Zero-probability cases, normalization, and probe rankings need small known-answer tests. The 120 smoke fixtures are not the training corpus. Test and independently authored cases must not contribute fitting counts, threshold selection, or calibration parameters.
+
+### Independent validation before more convenience features
+
+The earlier sequence put authored cases and real-model runs after much of the tooling. The revised [roadmap](ROADMAP.md) prioritizes authored incidents and a minimal recorded local-model pilot using the existing tools and grader. This exposes generator coupling and actual model failures sooner. A full Bayesian/LLM comparison still needs validated likelihoods and aligned knowledge and budgets.
+
+Authored cases must avoid generator templates, document causality and distractors, and freeze before tuning. Field-projection tests check direct label leakage; they do not rule out predictable signal signatures or memorization. An audit should inspect prompts, tool schemas, all observation fields, saved model inputs, training-suite membership, and checksums. The browser answer endpoint and evaluator-held labels must never enter a scored agent context. Real operational telemetry remains a separate external-validity requirement.
+
 ## Current verification boundary
 
-Installation, all four examples, and 243 tests were verified locally on Python 3.14. The package declares Python 3.10+ as a compatibility target, with a version matrix still pending. The manual investigation example makes predetermined queries; no autonomous agent evaluation, actual LLM comparison, or production validation has been published in this repository.
+Installation, all four examples, and 243 tests were verified locally on Python 3.14. The package declares Python 3.10+ as a compatibility target. The [CI matrix](../.github/workflows/tests.yml) also passed installation, all 243 tests, ten frozen checksums, and all four examples outside the checkout on Linux with each Python version from 3.10 to 3.14 at revision `92e6888a94be931e2a69d2d739e797e9ffa5ef23` ([run evidence](https://github.com/Pranjal677504/Inquest/actions/runs/37794556651)). Windows and macOS version matrices are not covered. CI has read-only repository permissions, uses pinned action revisions, and needs no provider credentials. CLI, model-resource packaging, and wheel verification remain pending.
+
+The manual investigation example makes predetermined queries; no autonomous agent evaluation, actual LLM comparison, or production validation has been published in this repository. The [related-work comparison](RELATED_WORK.md) sets expectations against existing operational and causal benchmarks. Information gain, calibration, and budget efficiency are research questions, not established differentiators.
 
 Byte-for-byte generation across Python versions is not guaranteed. The [published frozen suite](../datasets/README.md) is the common input for initial comparisons: readers load the recorded bytes and verify checksums without generating cases. It contains 120 synthetic incidents and is intended for small initial comparisons rather than statistical performance claims or likelihood training. Suite changes require a new version. The manifest has format version 1; individual scenario records still have no schema migration support.
 
