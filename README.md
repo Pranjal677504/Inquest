@@ -47,7 +47,7 @@ python -m pytest -q
 
 **Dependencies:** the generator, loader, tools, and grader use the Python standard library. Installing the distribution also installs **Flask**, which runs the bundled web application. Tests use pytest. The current features require no model, provider key, or database. Future hosted-model experiments would need credentials; local-model experiments would need a model server and suitable compute.
 
-**Python support:** package metadata targets Python 3.10+. Locally, installation, all four examples, and 243 tests have passed on Python 3.14. [CI](https://github.com/Pranjal677504/Inquest/actions/workflows/tests.yml) runs those checks on Python 3.10–3.14 on Linux; consult the workflow results for verified revisions. A configured matrix alone is not evidence of a pass. The hosted demo selects Python 3.14 in [`.python-version`](.python-version).
+**Python support:** Python **3.10–3.14** passed installation, all **243 tests**, all four examples, and ten frozen checksum checks on Linux in [this verified CI run](https://github.com/Pranjal677504/Inquest/actions/runs/37794556651). Local verification is on Python 3.14. Package metadata targets 3.10+; newer versions and Windows execution are not covered by that result. [CI](https://github.com/Pranjal677504/Inquest/actions/workflows/tests.yml) checks each pull request and `main` update. The hosted demo selects Python 3.14 in [`.python-version`](.python-version).
 
 ## A budgeted investigation
 

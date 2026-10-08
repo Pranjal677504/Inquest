@@ -88,7 +88,11 @@ Clarified that standard-library core modules coexist with a Flask runtime depend
 
 Changed research priorities: independently authored cases come next, followed by a minimal recorded real-model pilot, ahead of convenience CLI work. Existing milestone identifiers remain stable. Added acceptance requirements for separate fitting data, likelihood provenance, correlated evidence checks, leakage review, and public-holdout limitations. Design notes explain the proposed information-gain calculation and alternatives without suggesting a fitted model already exists.
 
-Local verification on Python 3.14: 243 tests passed; the README's budgeted-tool example ran; all ten frozen checksum entries and local Markdown links passed; formatting checks passed. No source or published dataset bytes changed. CI results will establish compatibility only after the jobs run. No independent cases, model runs, likelihood fits, or performance measurements are claimed by this correction.
+Local verification on Python 3.14: 243 tests passed; the README's budgeted-tool example ran; all ten frozen checksum entries and local Markdown links passed; formatting checks passed. No source or published dataset bytes changed.
+
+Hosted verification: [CI run 37794556651](https://github.com/Pranjal677504/Inquest/actions/runs/37794556651) at `92e6888a94be931e2a69d2d739e797e9ffa5ef23` passed on Python 3.10, 3.11, 3.12, 3.13, and 3.14 on Linux. Every job installed the package, passed 243 tests, verified all ten frozen checksum entries, and ran all four examples outside the checkout. The Vercel preview status also passed. These checks are linked in [PR #4](https://github.com/Pranjal677504/Inquest/pull/4); this follow-up records the actual results after they ran.
+
+No independent cases, model runs, likelihood fits, or performance measurements are claimed by this correction. The next research milestone is the authored holdout suite.
 
 ## How to read this log
 
