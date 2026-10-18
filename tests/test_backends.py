@@ -74,6 +74,44 @@ def test_compatible_request_and_metadata_match_the_contract(monkeypatch):
     assert "synthetic-test-key" not in json.dumps([backend.identity(), events])
 
 
+@pytest.mark.parametrize("token_field", ["max_tokens", "max_completion_tokens"])
+@pytest.mark.parametrize("temperature", [None, 0.0])
+def test_explicit_provider_options_control_the_wire_request(token_field, temperature):
+    with server([(200, completion())]) as (base, requests):
+        backend = adapter(base, token_limit_param=token_field, temperature=temperature,
+                          max_output_tokens=2048, json_mode=True)
+        backend.complete([{"role": "user", "content": "Return JSON"}], lambda *args: None)
+    body = requests[0]["body"]
+    assert body[token_field] == 2048
+    other = "max_tokens" if token_field == "max_completion_tokens" else "max_completion_tokens"
+    assert other not in body
+    if temperature is None:
+        assert "temperature" not in body
+    else:
+        assert body["temperature"] == temperature
+    assert backend.identity()["temperature"] == temperature
+    assert backend.identity()["token_limit_param"] == token_field
+
+
+def test_invalid_token_limit_parameter_is_rejected_before_network():
+    with pytest.raises(ValueError, match="Token limit parameter"):
+        adapter("http://127.0.0.1:1", token_limit_param="arbitrary_field")
+    with pytest.raises(ValueError, match="only to compatible"):
+        HTTPBackend(provider="ollama", model="local:tag", base_url="http://localhost:11434",
+                    token_limit_param="max_tokens")
+
+
+def test_cli_exposes_provider_defaults_without_conflicting_temperature_flags():
+    from inquest.cli import parser
+    arguments = ["run", "--suite", "datasets/authored-v1", "--set", "holdout",
+                 "--backend", "compatible", "--output", "runs/test"]
+    assert parser().parse_args(arguments).temperature == 0.0
+    config = parser().parse_args(arguments + ["--omit-temperature", "--token-limit-param", "max_tokens"])
+    assert config.temperature is None and config.token_limit_param == "max_tokens"
+    with pytest.raises(SystemExit):
+        parser().parse_args(arguments + ["--omit-temperature", "--temperature", "0"])
+
+
 def test_ollama_preflight_records_digest_without_pulling():
     tags = {"models": [{"name": "installed:small", "digest": "a" * 64}]}
     chat = {"model": "installed:small", "message": {"content": '{}'}, "done": True,

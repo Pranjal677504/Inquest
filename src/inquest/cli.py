@@ -21,7 +21,12 @@ def parser():
     run.add_argument("--base-url")
     run.add_argument("--api-key-env", default="INQUEST_API_KEY")
     run.add_argument("--model-revision")
-    run.add_argument("--temperature", type=float, default=0.0)
+    sampling = run.add_mutually_exclusive_group()
+    sampling.add_argument("--temperature", type=float, default=0.0)
+    sampling.add_argument("--omit-temperature", dest="temperature", action="store_const", const=None,
+                          help="Let the provider use its default; omit the temperature parameter")
+    run.add_argument("--token-limit-param", choices=("max_completion_tokens", "max_tokens"),
+                     default="max_completion_tokens", help="Output limit field for compatible endpoints")
     run.add_argument("--max-output-tokens", type=int, default=768)
     run.add_argument("--timeout", type=float, default=60.0)
     run.add_argument("--retries", type=int, default=2)
@@ -93,6 +98,7 @@ def main(argv=None):
                     provider=args.backend, model=args.model, base_url=base,
                     api_key_env=args.api_key_env, model_revision=args.model_revision,
                     temperature=args.temperature, max_output_tokens=args.max_output_tokens,
+                    token_limit_param=args.token_limit_param,
                     timeout=args.timeout, retries=args.retries, json_mode=args.json_mode,
                 )
                 backend.preflight()

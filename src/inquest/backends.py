@@ -69,12 +69,17 @@ class HTTPBackend:
     """Ollama native chat or compatible chat-completions; never auto-pull models."""
     def __init__(self, *, provider: str, model: str, base_url: str,
                  api_key_env: str = "INQUEST_API_KEY", model_revision: str | None = None,
-                 temperature: float = 0.0, max_output_tokens: int = 768,
+                 temperature: float | None = 0.0, max_output_tokens: int = 768,
+                 token_limit_param: str = "max_completion_tokens",
                  timeout: float = 60.0, retries: int = 2, json_mode: bool = False):
         if provider not in ("ollama", "compatible") or not isinstance(model, str) or not model.strip():
             raise ValueError("Choose ollama or compatible and an explicit model name")
-        if type(temperature) not in (int, float) or not math.isfinite(temperature) or not 0 <= temperature <= 2:
+        if temperature is not None and (type(temperature) not in (int, float) or not math.isfinite(temperature) or not 0 <= temperature <= 2):
             raise ValueError("Temperature must be in [0, 2]")
+        if token_limit_param not in ("max_completion_tokens", "max_tokens"):
+            raise ValueError("Token limit parameter must be max_completion_tokens or max_tokens")
+        if provider == "ollama" and token_limit_param != "max_completion_tokens":
+            raise ValueError("Token limit parameter applies only to compatible providers")
         if type(max_output_tokens) is not int or max_output_tokens < 1:
             raise ValueError("Output token limit must be positive")
         if type(retries) is not int or not 0 <= retries <= 5:
@@ -87,6 +92,7 @@ class HTTPBackend:
         self._api_key = os.environ.get(api_key_env, "")
         self.model_revision = model_revision
         self.temperature, self.max_output_tokens = temperature, max_output_tokens
+        self.token_limit_param = token_limit_param
         self.timeout, self.retries, self.json_mode = timeout, retries, json_mode
         self._digest = None
         self._opener = urllib.request.build_opener(_NoRedirect())
@@ -110,6 +116,7 @@ class HTTPBackend:
             "declared_model_revision": self.model_revision, "local_digest": self._digest,
             "base_url": self.base_url, "api_key_env": self.api_key_env,
             "temperature": self.temperature, "max_output_tokens": self.max_output_tokens,
+            "token_limit_param": self.token_limit_param,
             "timeout_seconds": self.timeout, "transport_retries": self.retries,
             "json_mode": self.json_mode,
         }
@@ -152,7 +159,9 @@ class HTTPBackend:
     def complete(self, messages, emit):
         if self.provider == "ollama":
             payload = {"model": self.model, "messages": messages, "stream": False,
-                       "options": {"temperature": self.temperature, "num_predict": self.max_output_tokens}}
+                       "options": {"num_predict": self.max_output_tokens}}
+            if self.temperature is not None:
+                payload["options"]["temperature"] = self.temperature
             if self.json_mode:
                 payload["format"] = "json"
             data = self._request("/api/chat", payload, emit)
@@ -164,7 +173,9 @@ class HTTPBackend:
                 raise BackendError("provider_response_incomplete")
         else:
             payload = {"model": self.model, "messages": messages, "stream": False,
-                       "temperature": self.temperature, "max_completion_tokens": self.max_output_tokens}
+                       self.token_limit_param: self.max_output_tokens}
+            if self.temperature is not None:
+                payload["temperature"] = self.temperature
             if self.json_mode:
                 payload["response_format"] = {"type": "json_object"}
             data = self._request("/chat/completions", payload, emit)

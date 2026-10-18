@@ -52,6 +52,25 @@ The adapter sends non-streaming `/chat/completions` requests with `max_completio
 
 Record an exact provider revision with `--model-revision` when one is available. Returned model names, response IDs and system fingerprints are stored per response. A provider alias may change behind an unchanged name; declared revisions are user-supplied metadata, not proof of immutable remote weights. Temperature zero is not a determinism guarantee.
 
+### Gemini compatibility
+
+Google rejected `gemini-2.5-flash-lite` for a new user with HTTP 404 and recommended `gemini-3.5-flash-lite`. The Gemini 3.5 migration guide requires omitting deprecated sampling parameters. Select the compatible endpoint, omit temperature, and explicitly select its output-limit field:
+
+```bash
+python -m inquest run \
+  --suite datasets/authored-v1 --set holdout \
+  --backend compatible \
+  --base-url https://generativelanguage.googleapis.com/v1beta/openai \
+  --api-key-env GEMINI_API_KEY --model gemini-3.5-flash-lite \
+  --omit-temperature --token-limit-param max_tokens --json-mode \
+  --max-output-tokens 2048 --max-model-turns 8 \
+  --budgets 5 --case-limit 1 --output runs/gemini-3-5-first-test
+```
+
+Set `GEMINI_API_KEY` in the same shell first. The runner does not load `.env` automatically. Model availability, free-tier eligibility, and quotas are account-specific. This configuration has loopback request-contract coverage; a successful live Gemini evaluation has not yet been established. See Google's [compatibility guide](https://ai.google.dev/gemini-api/docs/openai) and [migration guide](https://ai.google.dev/gemini-api/docs/generate-content/whats-new-gemini-3.6).
+
+`--omit-temperature` records a null temperature and sends no temperature field. `--token-limit-param` defaults to `max_completion_tokens`; choose `max_tokens` only for compatible endpoints that require it. These settings are included in the run fingerprint. Existing Groq and Ollama request defaults are preserved. Use a new output directory after changing code, model, or request settings; `--resume` preserves completed failures rather than retrying them.
+
 ## Action and budget contract
 
 Each completion must contain exactly one JSON object, without fences or prose:
