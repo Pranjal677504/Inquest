@@ -1,0 +1,42 @@
+# Testing
+
+## Python behavior and frozen data
+
+From a checkout with Python 3.10 or newer:
+
+```bash
+python -m pip install -e ".[dev]"
+python -m pytest -q
+```
+
+The read-only CI matrix runs the Python suite, all five examples, and frozen checksum verification on Python 3.10–3.14. Keep published dataset bytes unchanged. From `datasets/smoke-v1`, run `sha256sum -c SHA256SUMS` on Linux or `shasum -a 256 -c SHA256SUMS` on macOS.
+
+Scenario loading validates health status, a nonempty version string, a nonnegative integer restart count, and integer certificate days. Negative certificate days are valid expired-certificate telemetry. Additional health metadata is allowed and remains excluded from investigation observations.
+
+## Browser workflows
+
+Browser tests are separate from the default Python suite so ordinary toolkit development does not require a browser installation:
+
+```bash
+python -m pip install -e ".[dev,browser]"
+python -m playwright install --with-deps --only-shell chromium
+python -m pytest browser_tests -q
+```
+
+The test fixture starts Flask through Werkzeug on an ephemeral loopback port and closes the server and browser afterward. No model, credentials, deployed site, or database is needed. A dedicated CI job runs the same commands on Linux with Python 3.12.
+
+Checks exercise real frozen/generated incident requests, diagnosis submission, case resets, keyboard service selection and tab navigation, duplicate submissions, and recovery from non-JSON HTTP errors. Delayed-response checks hold completed diagnosis HTTP responses at the browser transport boundary and release them after another case loads. Both stale successes and stale errors must stay hidden. Delays use explicit release signals rather than fixed sleeps. JavaScript page errors fail the tests.
+
+These are application correctness checks. Handcrafted diagnoses and assertions against evaluator-held labels are not autonomous-agent evaluation results. The additive `evidence_relevant_success` metric is documented in [Grading](GRADING.md); it does not establish claim-level evidence support.
+
+## Authored causal fixtures
+
+`tests/test_authored.py` exercises every case’s support and counterevidence probes through the tools, grading compatibility, metadata isolation, malformed identity rejection, checksums, casebook binding, generator independence, source-to-data reproduction, and overwrite protection. Legacy smoke serialization is checked against all 120 original records. Verify the four additional canonical hashes from `datasets/authored-v1` with `sha256sum -c SHA256SUMS`.
+
+These checks validate interfaces and clue reachability. They are not an independent review of the causal narratives or agent accuracy measurements. See [the authored suite guide](../datasets/authored-v1/README.md) for limitations.
+
+## Agent runner and provider contracts
+
+`tests/test_runner.py` covers strict JSON, bounded protocol errors, charged invalid calls, report validation, context/turn limits, label isolation, mutation isolation, crash-safe result replacement, process locking, interrupted resume, preserved failed attempts, configuration mismatch, summaries and replay. `tests/test_backends.py` uses real loopback HTTP to check Ollama/compatible request bodies, response identities, usage accounting, bounded retries, failed authentication, redirect rejection and error-body redaction. All provider responses in these tests are fixtures; they are not model results.
+
+The CLI runs from a built wheel outside the checkout with an explicitly supplied suite directory. CI adds an isolated wheel/console-entrypoint smoke run. Actual provider and model execution must be verified separately; see [Runner](RUNNER.md).

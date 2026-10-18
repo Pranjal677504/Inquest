@@ -1,5 +1,5 @@
 const $ = (id) => document.getElementById(id);
-const state = {config:null, incident:null, service:'gateway', tab:'metrics', diagnosis:null};
+const state = {config:null, incident:null, service:'gateway', tab:'metrics', diagnosis:null, revision:0, loadRequest:0, diagnosisRequest:0, loading:false, diagnosing:false};
 const metricNames = {error_rate:'Error rate',latency_p99:'P99 latency',rps:'Requests / sec',cpu:'CPU usage',memory:'Memory usage',lock_wait_ms:'Lock wait',conn_used:'Connections used',hit_rate:'Cache hit rate'};
 const metricUnits = {error_rate:'%',latency_p99:'ms',rps:'rps',cpu:'%',memory:'%',lock_wait_ms:'ms',conn_used:'%',hit_rate:'%'};
 const faultNames = {bad_deploy:'Bad deploy',config_regression:'Config regression',resource_leak:'Resource leak',dependency_outage:'Dependency outage',cert_expiry:'Certificate expiry',traffic_surge:'Traffic surge',feature_flag:'Feature flag change',bad_migration:'Bad database migration'};
@@ -13,8 +13,57 @@ function clearError(){$('error-banner').hidden=true;$('error-banner').textConten
 function fillSelect(el,entries){el.innerHTML='';for(const [value,label] of entries){const option=document.createElement('option');option.value=value;option.textContent=label;el.append(option);}}
 function updateSourceFields(){const frozen=$('source').value==='frozen';$('frozen-field').hidden=!frozen;$('seed-field').hidden=frozen;const count=state.config?.frozenCounts[$('split').value]||8;const old=+$('case-index').value;fillSelect($('case-index'),Array.from({length:count},(_,i)=>[String(i),`Case ${String(i+1).padStart(2,'0')} of ${count}`]));$('case-index').value=String(Math.min(old,count-1));}
 function selection(){const base={source:$('source').value,split:$('split').value,difficulty:$('difficulty').value};if(base.source==='frozen')base.index=+$('case-index').value;else base.seed=+$('seed').value;return base;}
-async function post(path,body){const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await response.json();if(!response.ok)throw Error(data.error||`Request failed (${response.status})`);return data;}
-async function loadIncident(){clearError();const button=$('case-form').querySelector('button');button.disabled=true;button.querySelector('span').textContent='Loading incident…';try{const data=await post('/api/incident',selection());state.incident=data;state.service='gateway';state.diagnosis=null;$('diagnosis-result').hidden=true;const s=data.selection;const total=state.config.frozenCounts[s.split];$('case-label').textContent=s.source==='frozen'?`CASE ${String(s.index+1).padStart(2,'0')} / ${total}`:`SEED ${s.seed}`;$('source-label').textContent=s.source==='frozen'?'VERIFIED FROZEN SET':'SEEDED GENERATION';$('difficulty-label').textContent=s.difficulty.toUpperCase();const affected=Object.values(data.health).filter(h=>h.status!=='healthy').length;$('system-label').textContent=`${affected} SERVICE${affected===1?'':'S'} AFFECTED`;renderAll();}catch(error){showError(error.message);}finally{button.disabled=false;button.querySelector('span').textContent='Load incident';}}
+async function post(path,body){
+  const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  let data;
+  try{data=await response.json();}
+  catch{throw Error(response.ok?'The server returned an invalid response':`Request failed (${response.status})`);}
+  if(!response.ok)throw Error(typeof data?.error==='string'?data.error:`Request failed (${response.status})`);
+  return data;
+}
+function updateDiagnosisControls(){
+  const form=$('diagnosis-form');
+  for(const control of form.elements)control.disabled=!state.incident||state.loading||state.diagnosing;
+  form.querySelector('button').textContent=state.diagnosing?'Checking diagnosis…':'Submit diagnosis ↗';
+}
+async function loadIncident(){
+  const requestId=++state.loadRequest;
+  ++state.revision;
+  ++state.diagnosisRequest;
+  state.loading=true;
+  state.diagnosing=false;
+  state.diagnosis=null;
+  $('diagnosis-result').hidden=true;
+  clearError();
+  updateDiagnosisControls();
+  const button=$('case-form').querySelector('button');
+  button.disabled=true;
+  button.querySelector('span').textContent='Loading incident…';
+  try{
+    const data=await post('/api/incident',selection());
+    if(requestId!==state.loadRequest)return;
+    state.incident=data;
+    state.service='gateway';
+    $('diagnosis-form').reset();
+    const s=data.selection;
+    const total=state.config.frozenCounts[s.split];
+    $('case-label').textContent=s.source==='frozen'?`CASE ${String(s.index+1).padStart(2,'0')} / ${total}`:`SEED ${s.seed}`;
+    $('source-label').textContent=s.source==='frozen'?'VERIFIED FROZEN SET':'SEEDED GENERATION';
+    $('difficulty-label').textContent=s.difficulty.toUpperCase();
+    const affected=Object.values(data.health).filter(h=>h.status!=='healthy').length;
+    $('system-label').textContent=`${affected} SERVICE${affected===1?'':'S'} AFFECTED`;
+    renderAll();
+  }catch(error){
+    if(requestId===state.loadRequest)showError(error.message);
+  }finally{
+    if(requestId===state.loadRequest){
+      state.loading=false;
+      button.disabled=false;
+      button.querySelector('span').textContent='Load incident';
+      updateDiagnosisControls();
+    }
+  }
+}
 function renderAll(){renderTopology();renderHealth();renderTelemetry();}
 function selectService(service){state.service=service;renderTopology();renderHealth();renderTelemetry();}
 function renderTopology(){const incident=state.incident;if(!incident)return;const graph=$('topology');const lines=incident.topology.edges.map(([from,to])=>{const [x1,y1]=coords[from],[x2,y2]=coords[to];return `<path d="M ${x1*10} ${y1*4} L ${x2*10} ${y2*4}" marker-end="url(#arrow)"/>`;}).join('');graph.innerHTML=`<svg class="links" viewBox="0 0 1000 400" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker></defs>${lines}</svg>`;for(const service of incident.topology.services){const button=document.createElement('button');button.type='button';button.className=`node${service===state.service?' selected':''}`;button.style.left=`${coords[service][0]}%`;button.style.top=`${coords[service][1]}%`;button.dataset.status=incident.health[service].status;button.setAttribute('aria-label',`${service}, ${incident.health[service].status}`);button.setAttribute('aria-pressed',String(service===state.service));button.innerHTML=`<span class="node-name">${escapeHtml(service)}</span><span class="node-status"><i></i>${escapeHtml(incident.health[service].status.toUpperCase())}</span>`;button.addEventListener('click',()=>selectService(service));graph.append(button);}}
@@ -24,7 +73,57 @@ function renderMetric(){const incident=state.incident;if(!incident)return;const 
 function renderLogs(){const data=state.incident;if(!data)return;const search=$('log-search').value.trim().toLowerCase(),level=$('log-level').value;const logs=data.logs[state.service].filter(row=>(level==='ALL'||row.level===level)&&row.msg.toLowerCase().includes(search)).slice(-80).reverse();$('log-list').innerHTML=logs.length?logs.map(row=>`<div class="log-row"><span class="time">${minutes(row.t)}</span><span class="log-level ${escapeHtml(row.level)}">${escapeHtml(row.level)}</span><span>${escapeHtml(row.msg)}</span></div>`).join(''):'<div class="empty-state">No log lines match this filter.</div>';}
 function renderEvents(){const data=state.incident;if(!data)return;const events=[...data.events].sort((a,b)=>b.t-a.t);$('event-list').innerHTML=events.length?events.map(e=>`<div class="event-row"><span class="time">${minutes(e.t)}</span><div><strong>${escapeHtml(e.service)} · ${escapeHtml(e.summary)}</strong><small>${escapeHtml(e.kind.replaceAll('_',' '))} / ${escapeHtml(e.detail)}</small></div></div>`).join(''):'<div class="empty-state">No recorded changes in this incident.</div>';}
 function renderTraces(){const data=state.incident;if(!data)return;const faulty=$('trace-filter').value==='faulty';const traces=data.traces.filter(t=>t.spans.some(s=>s.service===state.service)&&(!faulty||t.spans.some(s=>s.status!=='ok'))).slice(-30).reverse();$('trace-list').innerHTML=traces.length?traces.map(t=>`<div class="trace-row"><div><span class="time">${minutes(t.t)}</span><span class="trace-chain">${t.spans.map(s=>escapeHtml(s.service)).join(' → ')}</span></div><div>${t.spans.map(s=>`<span class="${s.status==='ok'?'':'trace-bad'}">${escapeHtml(s.service)}: ${escapeHtml(s.status)} · ${s.ms}ms</span>`).join('')}</div></div>`).join(''):'<div class="empty-state">No sampled traces match this view.</div>';}
-function switchTab(name){state.tab=name;for(const button of document.querySelectorAll('.tab')){const active=button.dataset.tab===name;button.classList.toggle('active',active);button.setAttribute('aria-selected',String(active));$(`panel-${button.dataset.tab}`).hidden=!active;}}
-async function submitDiagnosis(event){event.preventDefault();if(!state.incident)return;clearError();const answer={service:$('answer-service').value,fault:$('answer-fault').value,action:$('answer-action').value};try{const result=await post('/api/diagnosis',{selection:state.incident.selection,answer});state.diagnosis=result;const actual=result.answer;const checks=result.checks;$('diagnosis-result').innerHTML=`<strong>${result.correct?'Correct diagnosis':'Case revealed'}</strong><p>You identified ${Object.values(checks).filter(Boolean).length} of 3 parts correctly.</p><p>Root service: <span class="answer">${escapeHtml(actual.service)}</span></p><p>Fault: <span class="answer">${escapeHtml(faultNames[actual.fault])}</span></p><p>Recovery: <span class="answer">${escapeHtml(fixNames[actual.fix.action])}</span></p>`;$('diagnosis-result').hidden=false;}catch(error){showError(error.message);}}
+function switchTab(name){
+  state.tab=name;
+  for(const button of document.querySelectorAll('.tab')){
+    const active=button.dataset.tab===name;
+    button.classList.toggle('active',active);
+    button.setAttribute('aria-selected',String(active));
+    button.tabIndex=active?0:-1;
+    $(`panel-${button.dataset.tab}`).hidden=!active;
+  }
+}
+function navigateTabs(event){
+  const tabs=[...document.querySelectorAll('.tab')];
+  const index=tabs.indexOf(event.currentTarget);
+  let next;
+  if(event.key==='ArrowRight')next=(index+1)%tabs.length;
+  else if(event.key==='ArrowLeft')next=(index+tabs.length-1)%tabs.length;
+  else if(event.key==='Home')next=0;
+  else if(event.key==='End')next=tabs.length-1;
+  else return;
+  event.preventDefault();
+  switchTab(tabs[next].dataset.tab);
+  tabs[next].focus();
+}
+async function submitDiagnosis(event){
+  event.preventDefault();
+  if(!state.incident||state.loading||state.diagnosing)return;
+  const revision=state.revision;
+  const requestId=++state.diagnosisRequest;
+  const current=()=>revision===state.revision&&requestId===state.diagnosisRequest;
+  const answer={service:$('answer-service').value,fault:$('answer-fault').value,action:$('answer-action').value};
+  state.diagnosing=true;
+  state.diagnosis=null;
+  $('diagnosis-result').hidden=true;
+  clearError();
+  updateDiagnosisControls();
+  try{
+    const result=await post('/api/diagnosis',{selection:state.incident.selection,answer});
+    if(!current())return;
+    state.diagnosis=result;
+    const actual=result.answer;
+    const checks=result.checks;
+    $('diagnosis-result').innerHTML=`<strong>${result.correct?'Correct diagnosis':'Case revealed'}</strong><p>You identified ${Object.values(checks).filter(Boolean).length} of 3 parts correctly.</p><p>Root service: <span class="answer">${escapeHtml(actual.service)}</span></p><p>Fault: <span class="answer">${escapeHtml(faultNames[actual.fault])}</span></p><p>Recovery: <span class="answer">${escapeHtml(fixNames[actual.fix.action])}</span></p>`;
+    $('diagnosis-result').hidden=false;
+  }catch(error){
+    if(current())showError(error.message);
+  }finally{
+    if(current()){
+      state.diagnosing=false;
+      updateDiagnosisControls();
+    }
+  }
+}
 async function init(){try{const response=await fetch('/api/config');if(!response.ok)throw Error('Could not load the workbench configuration');state.config=await response.json();fillSelect($('answer-service'),[['','Select a service'],...['gateway','auth','orders','payments','inventory','search','cache','postgres'].map(s=>[s,s[0].toUpperCase()+s.slice(1)])]);fillSelect($('answer-fault'),[['','Select a fault'],...state.config.faults.map(f=>[f,faultNames[f]])]);fillSelect($('answer-action'),[['','Select an action'],...state.config.fixActions.map(a=>[a,fixNames[a]])]);updateSourceFields();await loadIncident();}catch(error){showError(error.message);}}
-$('case-form').addEventListener('submit',event=>{event.preventDefault();loadIncident();});$('source').addEventListener('change',updateSourceFields);$('split').addEventListener('change',updateSourceFields);$('metric-select').addEventListener('change',renderMetric);$('log-search').addEventListener('input',renderLogs);$('log-level').addEventListener('change',renderLogs);$('trace-filter').addEventListener('change',renderTraces);$('diagnosis-form').addEventListener('submit',submitDiagnosis);document.querySelectorAll('.tab').forEach(button=>button.addEventListener('click',()=>switchTab(button.dataset.tab)));init();
+$('case-form').addEventListener('submit',event=>{event.preventDefault();loadIncident();});$('source').addEventListener('change',updateSourceFields);$('split').addEventListener('change',updateSourceFields);$('metric-select').addEventListener('change',renderMetric);$('log-search').addEventListener('input',renderLogs);$('log-level').addEventListener('change',renderLogs);$('trace-filter').addEventListener('change',renderTraces);$('diagnosis-form').addEventListener('submit',submitDiagnosis);document.querySelectorAll('.tab').forEach(button=>{button.addEventListener('click',()=>switchTab(button.dataset.tab));button.addEventListener('keydown',navigateTabs);});init();

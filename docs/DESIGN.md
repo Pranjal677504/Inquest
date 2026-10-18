@@ -93,3 +93,11 @@ Byte-for-byte generation across Python versions is not guaranteed. The [publishe
 - Which claims are already verified, and which require future experiments?
 
 The answers should refer to source, tests, or recorded runs. Planned capabilities should be described as plans until their evidence exists.
+
+## Authored construction extension (2026-10-18)
+
+`inquest-authored-v1` adds 16 AI-authored causal cases built from explicit definitions, separately from the random generator and its signal templates. Authored scenarios explicitly declare origin, use no seed, and have opaque authored IDs and a holdout split. Generated identities and serialization are retained byte-for-byte for all 120 smoke records. Both origins share the telemetry schema, eight-service topology, fault/fix ontology, observation tools, and grader.
+
+A generic renderer interpolates supplied keyframes and copies supplied telemetry; changing a valid label alone does not change observations. The evaluator-only casebook binds each narrative and expected fix to canonical case IDs and documents supporting and counterevidence queries. The version-2 suite loader verifies data, source definitions, and casebook checksums alongside identities and labels.
+
+These are public synthetic fixtures with sparse telemetry and single-author checks. Independent domain-expert review is pending. They have not been used for model fitting, prompt tuning, or accuracy claims. Authored-case loading is currently exposed through the Python API and example.

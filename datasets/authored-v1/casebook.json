@@ -1,0 +1,750 @@
+{
+  "suite_id": "inquest-authored-v1",
+  "format_version": 1,
+  "author": "Codex, prepared for Pranjal Prajapati",
+  "review_status": "Single-author causal and structural review; no independent human or domain-expert review.",
+  "cases": [
+    {
+      "id": "authored-v1-001",
+      "title": "Successful deploy, rejected issuer",
+      "fault_type": "config_regression",
+      "root_service": "auth",
+      "fix": {
+        "action": "revert_config",
+        "target": "auth"
+      },
+      "difficulty": "medium",
+      "onset": 64,
+      "narrative": "The auth deployment at minute 58 remains compatible, as its issuer acceptance check confirms. At minute 64 an issuer allowlist reload removes the partner issuer. Requests from that issuer are rejected while token verification and cache operations remain healthy. This raises caller errors without CPU or latency saturation. Revert the auth configuration, rather than the successful earlier deployment.",
+      "distractors": [
+        "The gateway release at minute 65 occurs after auth rejects tokens and its routing checksum is unchanged."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "auth",
+            "limit": 20
+          },
+          "contains": "issuer authorization rejects",
+          "role": "support"
+        },
+        {
+          "tool": "get_events",
+          "args": {
+            "service": "auth"
+          },
+          "contains": "issuer allowlist reload",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "gateway",
+            "limit": 20
+          },
+          "contains": "routing checksum unchanged",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v1-002",
+      "title": "Quiet client, growing descriptor count",
+      "fault_type": "resource_leak",
+      "root_service": "payments",
+      "fix": {
+        "action": "rollback",
+        "target": "payments"
+      },
+      "difficulty": "hard",
+      "onset": 60,
+      "narrative": "A payments client wrapper shipped at minute 52 creates a new socket for each request and fails to close it. Open descriptors climb under steady request volume; connection creation eventually fails. The database connection ratio and query latency stay at baseline, ruling against database pool exhaustion. Roll back the payments wrapper release.",
+      "distractors": [
+        "A postgres pool resize at minute 65 is tempting but database latency and utilization remain normal."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "payments",
+            "limit": 20
+          },
+          "contains": "handles never released",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "payments",
+            "limit": 20
+          },
+          "contains": "file descriptor limit reached",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "postgres",
+            "limit": 20
+          },
+          "contains": "without waits",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v1-003",
+      "title": "A warm cache behind expired inventory TLS",
+      "fault_type": "cert_expiry",
+      "root_service": "inventory",
+      "fix": {
+        "action": "renew_cert",
+        "target": "inventory"
+      },
+      "difficulty": "medium",
+      "onset": 73,
+      "narrative": "The inventory listener certificate expires at minute 73. Orders cannot finish the TLS handshake to inventory; the request never reaches its application or cache client. Cache hit rate and successful search-to-cache traces remain normal despite a nearby cache maintenance event. Renew the inventory listener certificate.",
+      "distractors": [
+        "Cache maintenance precedes the incident, but independent cache callers and cache telemetry remain healthy."
+      ],
+      "missing_logs": [
+        "inventory"
+      ],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "orders",
+            "limit": 20
+          },
+          "contains": "before request dispatch",
+          "role": "support"
+        },
+        {
+          "tool": "health_check",
+          "args": {
+            "service": "inventory"
+          },
+          "contains": "tls_cert_days_left=-1",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "search",
+            "limit": 20
+          },
+          "contains": "successfully in 7ms",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v1-004",
+      "title": "A deployment-shaped flag incident",
+      "fault_type": "feature_flag",
+      "root_service": "payments",
+      "fix": {
+        "action": "disable_flag",
+        "target": "payments"
+      },
+      "difficulty": "hard",
+      "onset": 68,
+      "narrative": "The payments application release at minute 64 passed a dark-path canary. At minute 68 a remotely controlled risk-inline flag begins waiting synchronously for the risk adapter. Waiting time rises without CPU, memory, or database load changes. A trace explicitly identifies risk-inline wait in payments. Disable that flag; a coincident unrelated orders release is not the initiating change.",
+      "distractors": [
+        "The orders release at minute 67 changes receipts only; no payment-route configuration changes."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "payments",
+            "limit": 20
+          },
+          "contains": "risk-inline=true",
+          "role": "support"
+        },
+        {
+          "tool": "get_trace",
+          "args": {
+            "status": "timeout"
+          },
+          "contains": "risk-inline wait",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "orders",
+            "limit": 20
+          },
+          "contains": "payment routing unchanged",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v1-005",
+      "title": "Serialized quantities after inventory release",
+      "fault_type": "bad_deploy",
+      "root_service": "inventory",
+      "fix": {
+        "action": "rollback",
+        "target": "inventory"
+      },
+      "difficulty": "medium",
+      "onset": 61,
+      "narrative": "Inventory release i52 changes available_units from an integer to a formatted string on its response path. Its validation fails for every stock request immediately after rollout, while database/cache dependencies answer normally. A nearby cache flag change affects a different caller. Roll back inventory to i51.",
+      "distractors": [
+        "The search cache flag changes at minute 62, but inventory stock failures began at minute 61 and its own cache calls pass."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "inventory",
+            "limit": 20
+          },
+          "contains": "received formatted string",
+          "role": "support"
+        },
+        {
+          "tool": "get_events",
+          "args": {
+            "service": "inventory"
+          },
+          "contains": "i51 to i52",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "inventory",
+            "limit": 20
+          },
+          "contains": "database=ok cache=ok",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v1-006",
+      "title": "Locked relation after a schema rewrite",
+      "fault_type": "bad_migration",
+      "root_service": "postgres",
+      "fix": {
+        "action": "rollback_migration",
+        "target": "postgres"
+      },
+      "difficulty": "hard",
+      "onset": 76,
+      "narrative": "An ALTER COLUMN rewrite starts at minute 76 and retains an exclusive lock on stock_reservations. Calls from both orders and inventory block on that relation. The postgres telemetry collector has no log records for the incident, so the investigation must combine change history, lock waits, and distinct caller symptoms. Roll back the migration to release the blocking rewrite.",
+      "distractors": [
+        "Orders release o33 occurs at minute 77 after both database callers begin waiting; inventory was not deployed."
+      ],
+      "missing_logs": [
+        "postgres"
+      ],
+      "probes": [
+        {
+          "tool": "get_events",
+          "args": {
+            "service": "postgres"
+          },
+          "contains": "type rewrite started",
+          "role": "support"
+        },
+        {
+          "tool": "query_metric",
+          "args": {
+            "service": "postgres",
+            "metric": "lock_wait_ms"
+          },
+          "contains": "first sustained deviation: t=",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "inventory",
+            "limit": 20
+          },
+          "contains": "schema owner transaction",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "orders",
+            "limit": 20
+          },
+          "contains": "database client unchanged",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v1-007",
+      "title": "A retry storm originating at auth",
+      "fault_type": "traffic_surge",
+      "root_service": "auth",
+      "fix": {
+        "action": "scale_up",
+        "target": "auth"
+      },
+      "difficulty": "medium",
+      "onset": 57,
+      "narrative": "A synchronized client refresh wave sends auth request volume from 200/s to 1800/s. Auth CPU and queueing increase with arrival rate before cache latency degrades slightly. An unrelated auth configuration reload occurs afterward and leaves request quotas unchanged. Scale auth capacity for the refresh wave.",
+      "distractors": [
+        "The auth config reload at minute 61 happens after the arrival-rate jump and preserves quotas."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "query_metric",
+          "args": {
+            "service": "auth",
+            "metric": "rps"
+          },
+          "contains": "first sustained deviation: t=",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "auth",
+            "limit": 20
+          },
+          "contains": "service capacity 650",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "auth",
+            "limit": 20
+          },
+          "contains": "worker configuration unchanged",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v1-008",
+      "title": "Database endpoint fenced after promotion",
+      "fault_type": "dependency_outage",
+      "root_service": "postgres",
+      "fix": {
+        "action": "failover",
+        "target": "postgres"
+      },
+      "difficulty": "hard",
+      "onset": 81,
+      "narrative": "A database promotion at minute 81 fences the old writer endpoint. Orders and payments both reach that endpoint but receive write-service unavailable responses. Postgres remains responsive to process health checks, so liveness alone is misleading. A payments deployment at minute 80 is unrelated because orders fails independently and both see the same writer fence. Fail over database connections to the available writer endpoint.",
+      "distractors": [
+        "The payments release is temporally close, but orders has no new release and receives the same writer-fenced error."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "postgres",
+            "limit": 20
+          },
+          "contains": "alternate writer endpoint is accepting writes",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "orders",
+            "limit": 20
+          },
+          "contains": "writer fenced",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "payments",
+            "limit": 20
+          },
+          "contains": "ledger insert not admitted",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v1-009",
+      "title": "The ranking codec canary missed packed results",
+      "fault_type": "bad_deploy",
+      "root_service": "search",
+      "fix": {
+        "action": "rollback",
+        "target": "search"
+      },
+      "difficulty": "hard",
+      "onset": 66,
+      "narrative": "Search release s70 enables a packed-result decoder incompatible with the existing index format. Small canary queries passed, but normal packed results fail immediately on rollout. Search application logs are absent during collection; the release notes and trace decoder failure must be combined with normal cache behavior. Roll back search to s69.",
+      "distractors": [
+        "A cache sizing change at minute 63 is close, but search traces show the decoder fails after cache lookup succeeds."
+      ],
+      "missing_logs": [
+        "search"
+      ],
+      "probes": [
+        {
+          "tool": "get_events",
+          "args": {
+            "service": "search"
+          },
+          "contains": "s69 to s70",
+          "role": "support"
+        },
+        {
+          "tool": "get_trace",
+          "args": {
+            "status": "error"
+          },
+          "contains": "packed result codec incompatible",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "cache",
+            "limit": 20
+          },
+          "contains": "delivered payload successfully",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v1-010",
+      "title": "Slow search with unchanged request volume",
+      "fault_type": "feature_flag",
+      "root_service": "inventory",
+      "fix": {
+        "action": "disable_flag",
+        "target": "inventory"
+      },
+      "difficulty": "medium",
+      "onset": 72,
+      "narrative": "An eager-stock-expansion flag in inventory adds 40 cache reads per stock request. Inventory traffic remains 150/s while inventory latency and cache request volume rise at minute 72. Search becomes slow as collateral load reaches its shared cache, despite its recent deployment. Disable inventory eager expansion.",
+      "distractors": [
+        "Search release s12 precedes the event, but search arrivals are unchanged and inventory records the new cache fanout."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "inventory",
+            "limit": 20
+          },
+          "contains": "40 cache reads",
+          "role": "support"
+        },
+        {
+          "tool": "get_events",
+          "args": {
+            "service": "inventory"
+          },
+          "contains": "eager-stock-expansion switched on",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "search",
+            "limit": 20
+          },
+          "contains": "request shape unchanged",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v1-011",
+      "title": "Healthy application, expired search listener",
+      "fault_type": "cert_expiry",
+      "root_service": "search",
+      "fix": {
+        "action": "renew_cert",
+        "target": "search"
+      },
+      "difficulty": "hard",
+      "onset": 88,
+      "narrative": "Search listener certificate expires at minute 88. Gateway TLS requests fail before search handles them, although the local search application health check remains responsive. A search release at minute 87 changed only query highlighting. Renew the listener certificate; restarting the healthy application or rolling back highlighting cannot extend its validity.",
+      "distractors": [
+        "The minute-87 search deployment is closer than the maintenance history, but its local acceptance check passes and the failed handshake identifies the expired listener credential."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "gateway",
+            "limit": 20
+          },
+          "contains": "validity ended at minute 88",
+          "role": "support"
+        },
+        {
+          "tool": "health_check",
+          "args": {
+            "service": "search"
+          },
+          "contains": "tls_cert_days_left=-2",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "search",
+            "limit": 20
+          },
+          "contains": "local query checks",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v1-012",
+      "title": "Requests rejected at the gateway boundary",
+      "fault_type": "config_regression",
+      "root_service": "gateway",
+      "fix": {
+        "action": "revert_config",
+        "target": "gateway"
+      },
+      "difficulty": "hard",
+      "onset": 59,
+      "narrative": "A gateway configuration sync lowers maximum request body size from 2MB to 2KB at minute 59. Normal checkout requests are rejected at ingress and do not reach orders, whose inbound traffic falls. Inventory latency has a brief unrelated pre-incident spike and returns to normal. Revert the gateway body-size configuration.",
+      "distractors": [
+        "A short inventory batch at minute 50 produced a latency spike that ended before checkout rejection began."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "gateway",
+            "limit": 20
+          },
+          "contains": "configured limit 2048 bytes",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "gateway",
+            "limit": 20
+          },
+          "contains": "2097152 bytes before",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "orders",
+            "limit": 20
+          },
+          "contains": "finish normally",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v1-013",
+      "title": "Index removal mistaken for demand growth",
+      "fault_type": "bad_migration",
+      "root_service": "postgres",
+      "fix": {
+        "action": "rollback_migration",
+        "target": "postgres"
+      },
+      "difficulty": "medium",
+      "onset": 67,
+      "narrative": "The postgres migration at minute 67 removes the index used by order lookup. The query plan changes to sequential scans, increasing database CPU and latency under unchanged arrival rate. Lock waits remain at baseline, distinguishing this from a blocking rewrite. A gateway rollout at minute 68 follows the degradation. Roll back the migration and restore the index.",
+      "distractors": [
+        "The gateway release occurs after database scans rise; ingress request volume is unchanged."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "postgres",
+            "limit": 20
+          },
+          "contains": "sequential scan after index removal",
+          "role": "support"
+        },
+        {
+          "tool": "get_events",
+          "args": {
+            "service": "postgres"
+          },
+          "contains": "orders_customer_idx removed",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "postgres",
+            "limit": 20
+          },
+          "contains": "lock waits remain 4ms",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v1-014",
+      "title": "Search arrivals overwhelm an unchanged deployment",
+      "fault_type": "traffic_surge",
+      "root_service": "search",
+      "fix": {
+        "action": "scale_up",
+        "target": "search"
+      },
+      "difficulty": "hard",
+      "onset": 79,
+      "narrative": "An external catalogue crawler sends search traffic from 140/s to 2400/s at minute 79. Query CPU and queue delay rise before downstream cache response time changes. Search logs are missing; the request-rate and CPU metric changes plus gateway traffic attribution and trace queue time distinguish demand growth from the unrelated earlier search release. Scale search capacity.",
+      "distractors": [
+        "Search release s90 occurred at minute 70 with stable error rates until the crawler wave nine minutes later."
+      ],
+      "missing_logs": [
+        "search"
+      ],
+      "probes": [
+        {
+          "tool": "query_metric",
+          "args": {
+            "service": "search",
+            "metric": "rps"
+          },
+          "contains": "first sustained deviation: t=",
+          "role": "support"
+        },
+        {
+          "tool": "get_trace",
+          "args": {
+            "status": "timeout"
+          },
+          "contains": "search queue residence 2300ms",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "cache",
+            "limit": 20
+          },
+          "contains": "no connectivity failures",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v1-015",
+      "title": "A cache address that cannot be reached",
+      "fault_type": "dependency_outage",
+      "root_service": "cache",
+      "fix": {
+        "action": "failover",
+        "target": "cache"
+      },
+      "difficulty": "medium",
+      "onset": 62,
+      "narrative": "A cache node network route disappears at minute 62. Multiple independent callers receive connection failures to the same cache address while their own processes and postgres calls remain healthy. A search flag change is coincident but cannot explain auth and inventory connection failures. Fail over the cache dependency.",
+      "distractors": [
+        "The search query flag is unrelated: auth and inventory do not run search code but fail to reach the same cache address."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "auth",
+            "limit": 20
+          },
+          "contains": "network route absent",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "inventory",
+            "limit": 20
+          },
+          "contains": "stock database read succeeds",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "search",
+            "limit": 20
+          },
+          "contains": "before query flag branch",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v1-016",
+      "title": "Orders memory grows despite steady traffic",
+      "fault_type": "resource_leak",
+      "root_service": "orders",
+      "fix": {
+        "action": "rollback",
+        "target": "orders"
+      },
+      "difficulty": "medium",
+      "onset": 55,
+      "narrative": "Orders release o81 adds subscription callbacks that remain retained after checkout completes. Under flat arrivals, memory grows from 42% to 95% and major pauses appear; the process restarts twice and callers become slow. A payments rollout at minute 75 is a distractor because callback retention and memory growth started earlier. Roll back orders to o80.",
+      "distractors": [
+        "Payments release p82 at minute 75 occurs after retained subscriptions and memory growth begin; payment processing latency stays at baseline."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "orders",
+            "limit": 20
+          },
+          "contains": "completed request objects still referenced",
+          "role": "support"
+        },
+        {
+          "tool": "query_metric",
+          "args": {
+            "service": "orders",
+            "metric": "memory"
+          },
+          "contains": "first sustained deviation: t=",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "payments",
+            "limit": 20
+          },
+          "contains": "latency steady at 90ms",
+          "role": "counterevidence"
+        }
+      ]
+    }
+  ]
+}

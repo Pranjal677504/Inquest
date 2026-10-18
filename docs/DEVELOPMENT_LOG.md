@@ -94,6 +94,54 @@ Hosted verification: [CI run 37794556651](https://github.com/Pranjal677504/Inque
 
 No independent cases, model runs, likelihood fits, or performance measurements are claimed by this correction. The next research milestone is the authored holdout suite.
 
+## 2026-10-18 — Workbench reliability and explicit evidence relevance
+
+Fixed two reproduced defects. Diagnosis responses and errors are now associated with the current case revision and request, so a late response cannot reveal an old answer under a newly loaded case. Diagnosis controls are disabled during case loading and submission, duplicate submissions are ignored, new cases reset the answer form, and non-JSON HTTP errors produce a useful status message. Case-load requests also use sequence checks to prevent older loads from replacing newer state.
+
+Scenario loading now validates all health fields consumed by the investigation environment: status, a nonempty version string, nonnegative integer restart count, and integer certificate days. Expired certificates and additional metadata remain supported. Missing fields fail with `ValueError` at the loading boundary instead of a later tool-construction `KeyError`. Published dataset bytes are unchanged.
+
+Added `evidence_relevant_success`, defined as existing accepted success plus at least one coarse tool/service-relevant citation. Existing success, report validation, and Brier definitions remain unchanged. This metric does not establish that cited text supports a claim; milestone 15 remains incomplete.
+
+Added telemetry-tab Arrow Left/Right and Home/End navigation, roving focus, and tab/panel relationships. Six separate Chromium workflow tests exercise the real Flask API with frozen/generated cases, correct diagnosis and case reset, keyboard interaction, late diagnosis successes and errors, duplicate submission, and recovery from a failed non-JSON response. A dedicated CI job installs the optional browser dependencies and runs these workflows; the existing Python matrix remains in place. [Testing instructions](TESTING.md) document both suites.
+
+Local verification on Linux with Python 3.12.14: all 264 Python tests and six browser tests passed; all four examples ran from outside the checkout; all ten frozen checksum entries passed; JavaScript syntax and Git whitespace checks passed. Local browser verification used Playwright 1.58.0 with Chromium 153.0.8010.0 from an alternate runtime because standard browser downloads returned invalid archives in this environment. Only the browser launch configuration was adapted locally; the committed application and browser tests ran unchanged. The new standard browser CI job requires its own hosted result before claiming that path is verified.
+
+This pass adds correctness and test coverage. Independently authored incidents, claim-level evidence support, a guided budgeted browser investigation, and actual model evaluation remain planned research/product work. No agent accuracy or calibration results are claimed.
+
+## 2026-10-18 — Authored causal incident suite
+
+Added `inquest-authored-v1`: 16 AI-authored synthetic cases with one medium and one hard design per fault category. Every case has explicit metric keyframes, case-specific logs/events/traces/health, a causal explanation, distractors, two or more reachable supporting clue checks, and counterevidence. Four cases omit root-service logs. Cases were constructed separately from the procedural generator and its signal templates; shared healthy baselines, schema, topology, and fault/fix ontology are reused.
+
+Committed canonical JSONL, complete authoring definitions, a machine-readable casebook, human-readable explanations, manifest provenance, and four SHA-256 entries. The generic renderer uses supplied keyframes and records rather than random sampling or fault-specific dispatch, and refuses nonempty output directories. Source hashes record the construction code even though the freeze was prepared from an uncommitted checkout based on `7054eed`. No prompts, model runs, likelihood fits, or tuning were used during construction.
+
+Added explicit authored scenario identity (`origin=authored`, null seed, holdout split) and manifest-format-2 loading alongside legacy smoke compatibility. The loader verifies casebook/source integrity and binds casebook order and labels to data. All 120 legacy smoke records retain identical serialization. The new example makes two predetermined unscored queries. CI configuration adds authored checksum verification and the fifth example.
+
+Verification on Linux/Python 3.12.14: 303 Python tests and all six Chromium workflow tests passed. Browser verification used the same alternate Chromium 153.0.8010.0 runtime and Playwright 1.58.0 recorded above. All five examples ran outside the checkout; all fourteen checksum entries across both suites passed; whitespace checks passed. New checks cover every authored clue, grading compatibility, tool metadata isolation, strict identities, changed files, casebook binding, generator/template independence, reproducible data bytes, and overwrite protection.
+
+Review status: structural and causal self-review by the same AI author; independent human/domain-expert review is pending. Milestone 14 remains unchecked until its broader review acceptance evidence is complete. The suite is public, fixed-topology, sparse and synthetic; designed difficulty is not empirically calibrated. Tests use evaluator-authored reports and do not establish agent accuracy, claim-level support, or production validity. The next implementation is a minimal recorded agent runner and an actual model pilot, reporting these limitations.
+
+GitHub write access remained unavailable in this session. Changes are delivered as local commits and apply-ready patches; no publication or hosted CI result is claimed.
+
+## 2026-10-18 — Recorded single-agent runner and model adapters
+
+Implemented a provider-neutral single-agent JSON action loop, an explicit non-LLM earliest-alert baseline, Ollama native chat, and compatible chat-completions adapters. The prompt exposes public tool/ontology knowledge only; the evaluator retains cases, IDs, labels and grading. Unknown environment calls remain charged, malformed envelopes consume bounded completion/error allowances, and final report validation failures are retained. No automatic final-report correction, source/filesystem access, paid provider default, or hidden completion cache is introduced.
+
+Added durable per-attempt journals with exact prompts, assistant responses, observations, transport/protocol errors and usage; atomic completed results; POSIX locking; strict configuration/code/data/model checks on resume; and offline replay/summary CLI commands. Interrupted episodes restart in new attempt files while preserving prior attempts and their readable usage. Completed failures are not retried on resume. Summaries retain failure denominators, separate budgets/difficulty, report descriptive Wilson intervals, disclose missing Brier/usage and include prior-attempt accounting. Remote aliases are not claimed to identify immutable weights.
+
+The model adapters were checked against official Ollama/Groq API documentation and real loopback HTTP fixtures. Keys are read from a named environment variable, excluded from artifacts, and not forwarded through redirects. Transport retries are bounded and explicit; raw error bodies and exception details are excluded. Provider availability, billing and actual model inference have not been validated by the fixture tests.
+
+Verification on Linux/Python 3.12.14: all 371 Python tests passed, including 68 new protocol/runner/HTTP/persistence tests. Built a wheel, installed it into a clean isolated environment, and ran its console entrypoint, replay and summary outside the checkout against an explicitly supplied suite. All five examples ran outside the checkout; all fourteen frozen checksums and whitespace checks passed. CI configuration adds an isolated wheel/console check. No web UI files changed in this pass, and no new hosted CI result is claimed.
+
+No conventional model API keys, installed local model, or Ollama server were configured in the execution environment. Actual LLM pilot work therefore remains blocked by the missing backend. The following experiment checkpoint records only the transparent offline heuristic; scripted responses and mock HTTP tests do not count as model runs. Windows runner execution is unsupported because the writer lock uses POSIX flock.
+
+### Recorded offline baseline checkpoint
+
+At clean source revision `e79c21f`, ran the fixed `earliest-alert-v1` heuristic on all 16 authored cases and all 16 smoke test-hard cases at tool budgets 5, 10 and 20: 96 episodes over 32 unique cases. Every episode completed on its first attempt with a structurally/reference-valid report. Authored accepted success was 11/16 at each budget, with evidence-relevant success 10/16. Smoke-hard accepted and evidence-relevant success were 10/16 at each budget. Constant confidence 0.5 produced Brier loss 0.25; this is not a calibration result.
+
+Preserved exact prompts, policy responses, observations, reports, metadata and results in two checksummed run archives under `experiments/offline-baseline-v1`, with matching standalone summaries and an explicit failure analysis. Completed-run resume produced identical summaries with no new attempts. Archives were extracted and inspected using the installed CLI outside the checkout, without credentials or model access.
+
+No model request or paid API call was made. The baseline was implemented after the public datasets were authored and inspected; this is not an untouched holdout assessment or a model comparison. Larger budgets did not fix this policy's selection/interpretation limitations. No policy classification logic was changed after observing these recorded results. Actual LLM evaluation remains pending a configured model backend. GitHub publication remains blocked by the existing write-access limitation; local commits and patches are the deliverable.
+
 ## How to read this log
 
 Entries use the date on which work occurred. Multiple changes on one day appear together. Each entry identifies the affected milestone, origin of integrated components, verification evidence, limitations, and next planned capability.

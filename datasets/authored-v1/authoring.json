@@ -1,0 +1,3690 @@
+{
+  "suite_id": "inquest-authored-v1",
+  "source_format_version": 1,
+  "author": "Codex, prepared for Pranjal Prajapati",
+  "freeze_date_utc": "2026-10-18",
+  "construction": "Case-specific authored keyframes and telemetry; no procedural incident generation, random sampling, or generator signal templates.",
+  "review_status": "Single-author causal and structural review; no independent human or domain-expert review.",
+  "baseline_metrics": {
+    "gateway": {
+      "rps": 500,
+      "error_rate": 0.2,
+      "latency_p99": 180,
+      "cpu": 24,
+      "memory": 38
+    },
+    "auth": {
+      "rps": 200,
+      "error_rate": 0.2,
+      "latency_p99": 45,
+      "cpu": 21,
+      "memory": 34
+    },
+    "orders": {
+      "rps": 160,
+      "error_rate": 0.2,
+      "latency_p99": 120,
+      "cpu": 32,
+      "memory": 42
+    },
+    "payments": {
+      "rps": 90,
+      "error_rate": 0.2,
+      "latency_p99": 90,
+      "cpu": 27,
+      "memory": 36
+    },
+    "inventory": {
+      "rps": 150,
+      "error_rate": 0.2,
+      "latency_p99": 70,
+      "cpu": 29,
+      "memory": 41
+    },
+    "search": {
+      "rps": 140,
+      "error_rate": 0.2,
+      "latency_p99": 95,
+      "cpu": 31,
+      "memory": 43
+    },
+    "cache": {
+      "rps": 320,
+      "error_rate": 0.1,
+      "latency_p99": 8,
+      "cpu": 18,
+      "memory": 48,
+      "hit_rate": 96
+    },
+    "postgres": {
+      "rps": 220,
+      "error_rate": 0.1,
+      "latency_p99": 25,
+      "cpu": 35,
+      "memory": 55,
+      "lock_wait_ms": 4,
+      "conn_used": 32
+    }
+  },
+  "baseline_health": {
+    "status": "healthy",
+    "version": "r17",
+    "restarts_1h": 0,
+    "cert_days_left": 45
+  },
+  "cases": [
+    {
+      "title": "Successful deploy, rejected issuer",
+      "fault_type": "config_regression",
+      "root_service": "auth",
+      "difficulty": "medium",
+      "onset": 64,
+      "narrative": "The auth deployment at minute 58 remains compatible, as its issuer acceptance check confirms. At minute 64 an issuer allowlist reload removes the partner issuer. Requests from that issuer are rejected while token verification and cache operations remain healthy. This raises caller errors without CPU or latency saturation. Revert the auth configuration, rather than the successful earlier deployment.",
+      "distractors": [
+        "The gateway release at minute 65 occurs after auth rejects tokens and its routing checksum is unchanged."
+      ],
+      "profiles": [
+        {
+          "service": "auth",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              63,
+              0.2
+            ],
+            [
+              64,
+              14
+            ],
+            [
+              119,
+              14
+            ]
+          ]
+        },
+        {
+          "service": "gateway",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              64,
+              0.2
+            ],
+            [
+              65,
+              6
+            ],
+            [
+              119,
+              6
+            ]
+          ]
+        },
+        {
+          "service": "auth",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              45
+            ],
+            [
+              63,
+              45
+            ],
+            [
+              64,
+              46
+            ],
+            [
+              119,
+              46
+            ]
+          ]
+        }
+      ],
+      "logs": [
+        {
+          "t": 59,
+          "service": "auth",
+          "level": "INFO",
+          "msg": "release r18 acceptance check: partner-issuer token accepted"
+        },
+        {
+          "t": 64,
+          "service": "auth",
+          "level": "ERROR",
+          "msg": "issuer partner-issuer rejected; loaded issuer list contains internal-issuer only"
+        },
+        {
+          "t": 103,
+          "service": "auth",
+          "level": "ERROR",
+          "msg": "signature verification passes; issuer authorization rejects partner-issuer"
+        },
+        {
+          "t": 106,
+          "service": "gateway",
+          "level": "WARN",
+          "msg": "login dependency returned 401 for partner session"
+        },
+        {
+          "t": 107,
+          "service": "gateway",
+          "level": "INFO",
+          "msg": "release g31 routing checksum unchanged"
+        }
+      ],
+      "events": [
+        {
+          "t": 58,
+          "service": "auth",
+          "kind": "deploy",
+          "summary": "release r18 activated",
+          "detail": "Acceptance probes passed for existing issuers."
+        },
+        {
+          "t": 64,
+          "service": "auth",
+          "kind": "config_change",
+          "summary": "issuer allowlist reload",
+          "detail": "Allowed issuer set changed from internal + partner to internal only."
+        },
+        {
+          "t": 65,
+          "service": "gateway",
+          "kind": "deploy",
+          "summary": "release g31 activated",
+          "detail": "Static response header adjustment; upstream route table unchanged."
+        }
+      ],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "auth",
+            "limit": 20
+          },
+          "contains": "issuer authorization rejects",
+          "role": "support"
+        },
+        {
+          "tool": "get_events",
+          "args": {
+            "service": "auth"
+          },
+          "contains": "issuer allowlist reload",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "gateway",
+            "limit": 20
+          },
+          "contains": "routing checksum unchanged",
+          "role": "counterevidence"
+        }
+      ],
+      "traces": [
+        {
+          "t": 109,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 80,
+              "status": "error",
+              "note": "login rejected"
+            },
+            {
+              "service": "auth",
+              "ms": 12,
+              "status": "error",
+              "note": "issuer denied"
+            }
+          ]
+        }
+      ],
+      "health_overrides": {
+        "auth": {
+          "status": "degraded"
+        },
+        "gateway": {
+          "status": "degraded"
+        }
+      },
+      "missing_logs": [],
+      "id": "authored-v1-001",
+      "gold_tools": [
+        "events",
+        "logs"
+      ],
+      "gold_services": [
+        "auth"
+      ],
+      "fix": {
+        "action": "revert_config",
+        "target": "auth"
+      }
+    },
+    {
+      "title": "Quiet client, growing descriptor count",
+      "fault_type": "resource_leak",
+      "root_service": "payments",
+      "difficulty": "hard",
+      "onset": 60,
+      "narrative": "A payments client wrapper shipped at minute 52 creates a new socket for each request and fails to close it. Open descriptors climb under steady request volume; connection creation eventually fails. The database connection ratio and query latency stay at baseline, ruling against database pool exhaustion. Roll back the payments wrapper release.",
+      "distractors": [
+        "A postgres pool resize at minute 65 is tempting but database latency and utilization remain normal."
+      ],
+      "profiles": [
+        {
+          "service": "payments",
+          "metric": "memory",
+          "points": [
+            [
+              0,
+              36
+            ],
+            [
+              60,
+              36
+            ],
+            [
+              119,
+              87
+            ]
+          ]
+        },
+        {
+          "service": "payments",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              90,
+              0.2
+            ],
+            [
+              91,
+              12
+            ],
+            [
+              119,
+              12
+            ]
+          ]
+        },
+        {
+          "service": "payments",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              90
+            ],
+            [
+              90,
+              90
+            ],
+            [
+              91,
+              1600
+            ],
+            [
+              119,
+              1600
+            ]
+          ]
+        },
+        {
+          "service": "orders",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              91,
+              0.2
+            ],
+            [
+              92,
+              7
+            ],
+            [
+              119,
+              7
+            ]
+          ]
+        },
+        {
+          "service": "gateway",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              92,
+              0.2
+            ],
+            [
+              93,
+              4
+            ],
+            [
+              119,
+              4
+            ]
+          ]
+        }
+      ],
+      "logs": [
+        {
+          "t": 62,
+          "service": "payments",
+          "level": "INFO",
+          "msg": "client wrapper descriptors_open=420; incoming requests steady at 90/s"
+        },
+        {
+          "t": 90,
+          "service": "payments",
+          "level": "WARN",
+          "msg": "descriptors_open=3930 of limit 4096; established client handles never released"
+        },
+        {
+          "t": 112,
+          "service": "payments",
+          "level": "ERROR",
+          "msg": "socket creation denied: process file descriptor limit reached"
+        },
+        {
+          "t": 108,
+          "service": "postgres",
+          "level": "INFO",
+          "msg": "database sessions 32 percent; query latency 25ms; pool resize completed without waits"
+        }
+      ],
+      "events": [
+        {
+          "t": 52,
+          "service": "payments",
+          "kind": "deploy",
+          "summary": "client wrapper r22 rollout",
+          "detail": "Client lifetime handling changed; old release is r21."
+        },
+        {
+          "t": 65,
+          "service": "postgres",
+          "kind": "config_change",
+          "summary": "pool capacity increased",
+          "detail": "Capacity raised for a planned load test; no current queue."
+        }
+      ],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "payments",
+            "limit": 20
+          },
+          "contains": "handles never released",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "payments",
+            "limit": 20
+          },
+          "contains": "file descriptor limit reached",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "postgres",
+            "limit": 20
+          },
+          "contains": "without waits",
+          "role": "counterevidence"
+        }
+      ],
+      "traces": [
+        {
+          "t": 110,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 1810,
+              "status": "error",
+              "note": "checkout dependency failed"
+            },
+            {
+              "service": "orders",
+              "ms": 1750,
+              "status": "error",
+              "note": "payment submission failed"
+            },
+            {
+              "service": "payments",
+              "ms": 1690,
+              "status": "error",
+              "note": "cannot allocate a socket"
+            }
+          ]
+        }
+      ],
+      "health_overrides": {
+        "payments": {
+          "status": "degraded"
+        },
+        "orders": {
+          "status": "degraded"
+        },
+        "gateway": {
+          "status": "degraded"
+        }
+      },
+      "missing_logs": [],
+      "id": "authored-v1-002",
+      "gold_tools": [
+        "logs"
+      ],
+      "gold_services": [
+        "payments"
+      ],
+      "fix": {
+        "action": "rollback",
+        "target": "payments"
+      }
+    },
+    {
+      "title": "A warm cache behind expired inventory TLS",
+      "fault_type": "cert_expiry",
+      "root_service": "inventory",
+      "difficulty": "medium",
+      "onset": 73,
+      "narrative": "The inventory listener certificate expires at minute 73. Orders cannot finish the TLS handshake to inventory; the request never reaches its application or cache client. Cache hit rate and successful search-to-cache traces remain normal despite a nearby cache maintenance event. Renew the inventory listener certificate.",
+      "distractors": [
+        "Cache maintenance precedes the incident, but independent cache callers and cache telemetry remain healthy."
+      ],
+      "profiles": [
+        {
+          "service": "orders",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              72,
+              0.2
+            ],
+            [
+              73,
+              17
+            ],
+            [
+              119,
+              17
+            ]
+          ]
+        },
+        {
+          "service": "gateway",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              73,
+              0.2
+            ],
+            [
+              74,
+              8
+            ],
+            [
+              119,
+              8
+            ]
+          ]
+        },
+        {
+          "service": "inventory",
+          "metric": "rps",
+          "points": [
+            [
+              0,
+              150
+            ],
+            [
+              72,
+              150
+            ],
+            [
+              73,
+              0
+            ],
+            [
+              119,
+              0
+            ]
+          ]
+        }
+      ],
+      "logs": [
+        {
+          "t": 109,
+          "service": "orders",
+          "level": "ERROR",
+          "msg": "inventory listener peer certificate expired at minute 73; handshake rejected before request dispatch"
+        },
+        {
+          "t": 110,
+          "service": "search",
+          "level": "INFO",
+          "msg": "cache lookup served successfully in 7ms during inventory handshake failures"
+        }
+      ],
+      "events": [
+        {
+          "t": 70,
+          "service": "cache",
+          "kind": "config_change",
+          "summary": "cache maintenance window",
+          "detail": "One replica rotated; availability check passed."
+        }
+      ],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "orders",
+            "limit": 20
+          },
+          "contains": "before request dispatch",
+          "role": "support"
+        },
+        {
+          "tool": "health_check",
+          "args": {
+            "service": "inventory"
+          },
+          "contains": "tls_cert_days_left=-1",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "search",
+            "limit": 20
+          },
+          "contains": "successfully in 7ms",
+          "role": "counterevidence"
+        }
+      ],
+      "traces": [
+        {
+          "t": 108,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 110,
+              "status": "error",
+              "note": "stock check unavailable"
+            },
+            {
+              "service": "orders",
+              "ms": 42,
+              "status": "error",
+              "note": "inventory peer certificate expired"
+            }
+          ]
+        },
+        {
+          "t": 110,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 110,
+              "status": "ok",
+              "note": ""
+            },
+            {
+              "service": "search",
+              "ms": 95,
+              "status": "ok",
+              "note": ""
+            },
+            {
+              "service": "cache",
+              "ms": 7,
+              "status": "ok",
+              "note": ""
+            }
+          ]
+        }
+      ],
+      "health_overrides": {
+        "inventory": {
+          "status": "degraded",
+          "cert_days_left": -1
+        },
+        "orders": {
+          "status": "degraded"
+        },
+        "gateway": {
+          "status": "degraded"
+        }
+      },
+      "missing_logs": [
+        "inventory"
+      ],
+      "id": "authored-v1-003",
+      "gold_tools": [
+        "health",
+        "logs"
+      ],
+      "gold_services": [
+        "inventory",
+        "orders"
+      ],
+      "fix": {
+        "action": "renew_cert",
+        "target": "inventory"
+      }
+    },
+    {
+      "title": "A deployment-shaped flag incident",
+      "fault_type": "feature_flag",
+      "root_service": "payments",
+      "difficulty": "hard",
+      "onset": 68,
+      "narrative": "The payments application release at minute 64 passed a dark-path canary. At minute 68 a remotely controlled risk-inline flag begins waiting synchronously for the risk adapter. Waiting time rises without CPU, memory, or database load changes. A trace explicitly identifies risk-inline wait in payments. Disable that flag; a coincident unrelated orders release is not the initiating change.",
+      "distractors": [
+        "The orders release at minute 67 changes receipts only; no payment-route configuration changes."
+      ],
+      "profiles": [
+        {
+          "service": "payments",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              90
+            ],
+            [
+              67,
+              90
+            ],
+            [
+              68,
+              2400
+            ],
+            [
+              119,
+              2400
+            ]
+          ]
+        },
+        {
+          "service": "payments",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              67,
+              0.2
+            ],
+            [
+              68,
+              8
+            ],
+            [
+              119,
+              8
+            ]
+          ]
+        },
+        {
+          "service": "orders",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              120
+            ],
+            [
+              68,
+              120
+            ],
+            [
+              69,
+              2700
+            ],
+            [
+              119,
+              2700
+            ]
+          ]
+        },
+        {
+          "service": "gateway",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              180
+            ],
+            [
+              69,
+              180
+            ],
+            [
+              70,
+              3000
+            ],
+            [
+              119,
+              3000
+            ]
+          ]
+        }
+      ],
+      "logs": [
+        {
+          "t": 65,
+          "service": "payments",
+          "level": "INFO",
+          "msg": "release p40 canary completed: risk adapter remains asynchronous"
+        },
+        {
+          "t": 69,
+          "service": "payments",
+          "level": "WARN",
+          "msg": "risk-inline=true waiting for adapter before authorization response"
+        },
+        {
+          "t": 113,
+          "service": "payments",
+          "level": "WARN",
+          "msg": "risk-inline wait consumed 2210ms; processing CPU unchanged"
+        },
+        {
+          "t": 112,
+          "service": "orders",
+          "level": "INFO",
+          "msg": "receipt-only release o15: payment routing unchanged"
+        }
+      ],
+      "events": [
+        {
+          "t": 64,
+          "service": "payments",
+          "kind": "deploy",
+          "summary": "release p40 activated",
+          "detail": "Dark path shipped; flag default remains false."
+        },
+        {
+          "t": 67,
+          "service": "orders",
+          "kind": "deploy",
+          "summary": "receipt formatting release",
+          "detail": "No payment client or route modifications."
+        }
+      ],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "payments",
+            "limit": 20
+          },
+          "contains": "risk-inline=true",
+          "role": "support"
+        },
+        {
+          "tool": "get_trace",
+          "args": {
+            "status": "timeout"
+          },
+          "contains": "risk-inline wait",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "orders",
+            "limit": 20
+          },
+          "contains": "payment routing unchanged",
+          "role": "counterevidence"
+        }
+      ],
+      "traces": [
+        {
+          "t": 112,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 2900,
+              "status": "timeout",
+              "note": ""
+            },
+            {
+              "service": "orders",
+              "ms": 2750,
+              "status": "timeout",
+              "note": ""
+            },
+            {
+              "service": "payments",
+              "ms": 2400,
+              "status": "timeout",
+              "note": "risk-inline wait"
+            }
+          ]
+        }
+      ],
+      "health_overrides": {
+        "payments": {
+          "status": "degraded"
+        }
+      },
+      "missing_logs": [],
+      "id": "authored-v1-004",
+      "gold_tools": [
+        "logs",
+        "trace"
+      ],
+      "gold_services": [
+        "payments"
+      ],
+      "fix": {
+        "action": "disable_flag",
+        "target": "payments"
+      }
+    },
+    {
+      "title": "Serialized quantities after inventory release",
+      "fault_type": "bad_deploy",
+      "root_service": "inventory",
+      "difficulty": "medium",
+      "onset": 61,
+      "narrative": "Inventory release i52 changes available_units from an integer to a formatted string on its response path. Its validation fails for every stock request immediately after rollout, while database/cache dependencies answer normally. A nearby cache flag change affects a different caller. Roll back inventory to i51.",
+      "distractors": [
+        "The search cache flag changes at minute 62, but inventory stock failures began at minute 61 and its own cache calls pass."
+      ],
+      "profiles": [
+        {
+          "service": "inventory",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              60,
+              0.2
+            ],
+            [
+              61,
+              22
+            ],
+            [
+              119,
+              22
+            ]
+          ]
+        },
+        {
+          "service": "orders",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              61,
+              0.2
+            ],
+            [
+              62,
+              13
+            ],
+            [
+              119,
+              13
+            ]
+          ]
+        },
+        {
+          "service": "gateway",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              62,
+              0.2
+            ],
+            [
+              63,
+              7
+            ],
+            [
+              119,
+              7
+            ]
+          ]
+        }
+      ],
+      "logs": [
+        {
+          "t": 61,
+          "service": "inventory",
+          "level": "ERROR",
+          "msg": "response encoder: available_units expected integer, received formatted string in release i52"
+        },
+        {
+          "t": 107,
+          "service": "inventory",
+          "level": "INFO",
+          "msg": "stock lookup dependencies: database=ok cache=ok; encoder failure persists"
+        },
+        {
+          "t": 110,
+          "service": "search",
+          "level": "INFO",
+          "msg": "query cache flag disabled; search response checks pass"
+        }
+      ],
+      "events": [
+        {
+          "t": 61,
+          "service": "inventory",
+          "kind": "deploy",
+          "summary": "release i51 to i52",
+          "detail": "New stock response encoder and localized quantity formatting."
+        },
+        {
+          "t": 62,
+          "service": "search",
+          "kind": "flag_change",
+          "summary": "query-cache flag disabled",
+          "detail": "Experiment affects search query cache only."
+        }
+      ],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "inventory",
+            "limit": 20
+          },
+          "contains": "received formatted string",
+          "role": "support"
+        },
+        {
+          "tool": "get_events",
+          "args": {
+            "service": "inventory"
+          },
+          "contains": "i51 to i52",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "inventory",
+            "limit": 20
+          },
+          "contains": "database=ok cache=ok",
+          "role": "counterevidence"
+        }
+      ],
+      "traces": [
+        {
+          "t": 113,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 250,
+              "status": "error",
+              "note": ""
+            },
+            {
+              "service": "orders",
+              "ms": 210,
+              "status": "error",
+              "note": ""
+            },
+            {
+              "service": "inventory",
+              "ms": 175,
+              "status": "error",
+              "note": "stock response encoding failed"
+            }
+          ]
+        }
+      ],
+      "health_overrides": {
+        "inventory": {
+          "status": "degraded"
+        },
+        "orders": {
+          "status": "degraded"
+        },
+        "gateway": {
+          "status": "degraded"
+        }
+      },
+      "missing_logs": [],
+      "id": "authored-v1-005",
+      "gold_tools": [
+        "events",
+        "logs"
+      ],
+      "gold_services": [
+        "inventory"
+      ],
+      "fix": {
+        "action": "rollback",
+        "target": "inventory"
+      }
+    },
+    {
+      "title": "Locked relation after a schema rewrite",
+      "fault_type": "bad_migration",
+      "root_service": "postgres",
+      "difficulty": "hard",
+      "onset": 76,
+      "narrative": "An ALTER COLUMN rewrite starts at minute 76 and retains an exclusive lock on stock_reservations. Calls from both orders and inventory block on that relation. The postgres telemetry collector has no log records for the incident, so the investigation must combine change history, lock waits, and distinct caller symptoms. Roll back the migration to release the blocking rewrite.",
+      "distractors": [
+        "Orders release o33 occurs at minute 77 after both database callers begin waiting; inventory was not deployed."
+      ],
+      "profiles": [
+        {
+          "service": "postgres",
+          "metric": "lock_wait_ms",
+          "points": [
+            [
+              0,
+              4
+            ],
+            [
+              75,
+              4
+            ],
+            [
+              76,
+              1800
+            ],
+            [
+              119,
+              1800
+            ]
+          ]
+        },
+        {
+          "service": "postgres",
+          "metric": "conn_used",
+          "points": [
+            [
+              0,
+              32
+            ],
+            [
+              75,
+              32
+            ],
+            [
+              76,
+              91
+            ],
+            [
+              119,
+              91
+            ]
+          ]
+        },
+        {
+          "service": "postgres",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              25
+            ],
+            [
+              75,
+              25
+            ],
+            [
+              76,
+              2100
+            ],
+            [
+              119,
+              2100
+            ]
+          ]
+        },
+        {
+          "service": "orders",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              120
+            ],
+            [
+              76,
+              120
+            ],
+            [
+              77,
+              2700
+            ],
+            [
+              119,
+              2700
+            ]
+          ]
+        },
+        {
+          "service": "inventory",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              70
+            ],
+            [
+              76,
+              70
+            ],
+            [
+              77,
+              2500
+            ],
+            [
+              119,
+              2500
+            ]
+          ]
+        },
+        {
+          "service": "gateway",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              180
+            ],
+            [
+              77,
+              180
+            ],
+            [
+              78,
+              2900
+            ],
+            [
+              119,
+              2900
+            ]
+          ]
+        }
+      ],
+      "logs": [
+        {
+          "t": 109,
+          "service": "orders",
+          "level": "ERROR",
+          "msg": "stock_reservations query blocked awaiting exclusive relation rewrite"
+        },
+        {
+          "t": 110,
+          "service": "inventory",
+          "level": "ERROR",
+          "msg": "stock_reservations read waiting on schema owner transaction"
+        },
+        {
+          "t": 112,
+          "service": "orders",
+          "level": "INFO",
+          "msg": "release o33 changes email receipt layout; database client unchanged"
+        }
+      ],
+      "events": [
+        {
+          "t": 76,
+          "service": "postgres",
+          "kind": "migration",
+          "summary": "stock_reservations type rewrite started",
+          "detail": "ALTER COLUMN rewrites relation under exclusive lock; rollback cancels transaction."
+        },
+        {
+          "t": 77,
+          "service": "orders",
+          "kind": "deploy",
+          "summary": "release o33 activated",
+          "detail": "Email receipt layout only."
+        }
+      ],
+      "probes": [
+        {
+          "tool": "get_events",
+          "args": {
+            "service": "postgres"
+          },
+          "contains": "type rewrite started",
+          "role": "support"
+        },
+        {
+          "tool": "query_metric",
+          "args": {
+            "service": "postgres",
+            "metric": "lock_wait_ms"
+          },
+          "contains": "first sustained deviation: t=",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "inventory",
+            "limit": 20
+          },
+          "contains": "schema owner transaction",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "orders",
+            "limit": 20
+          },
+          "contains": "database client unchanged",
+          "role": "counterevidence"
+        }
+      ],
+      "traces": [
+        {
+          "t": 111,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 2900,
+              "status": "timeout",
+              "note": ""
+            },
+            {
+              "service": "orders",
+              "ms": 2750,
+              "status": "timeout",
+              "note": ""
+            },
+            {
+              "service": "postgres",
+              "ms": 2150,
+              "status": "timeout",
+              "note": "waiting for relation rewrite lock"
+            }
+          ]
+        }
+      ],
+      "health_overrides": {
+        "postgres": {
+          "status": "degraded"
+        }
+      },
+      "missing_logs": [
+        "postgres"
+      ],
+      "id": "authored-v1-006",
+      "gold_tools": [
+        "events",
+        "logs",
+        "metric"
+      ],
+      "gold_services": [
+        "postgres"
+      ],
+      "fix": {
+        "action": "rollback_migration",
+        "target": "postgres"
+      }
+    },
+    {
+      "title": "A retry storm originating at auth",
+      "fault_type": "traffic_surge",
+      "root_service": "auth",
+      "difficulty": "medium",
+      "onset": 57,
+      "narrative": "A synchronized client refresh wave sends auth request volume from 200/s to 1800/s. Auth CPU and queueing increase with arrival rate before cache latency degrades slightly. An unrelated auth configuration reload occurs afterward and leaves request quotas unchanged. Scale auth capacity for the refresh wave.",
+      "distractors": [
+        "The auth config reload at minute 61 happens after the arrival-rate jump and preserves quotas."
+      ],
+      "profiles": [
+        {
+          "service": "auth",
+          "metric": "rps",
+          "points": [
+            [
+              0,
+              200
+            ],
+            [
+              56,
+              200
+            ],
+            [
+              57,
+              1800
+            ],
+            [
+              119,
+              1800
+            ]
+          ]
+        },
+        {
+          "service": "auth",
+          "metric": "cpu",
+          "points": [
+            [
+              0,
+              21
+            ],
+            [
+              57,
+              21
+            ],
+            [
+              58,
+              96
+            ],
+            [
+              119,
+              96
+            ]
+          ]
+        },
+        {
+          "service": "auth",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              45
+            ],
+            [
+              58,
+              45
+            ],
+            [
+              59,
+              2100
+            ],
+            [
+              119,
+              2100
+            ]
+          ]
+        },
+        {
+          "service": "auth",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              58,
+              0.2
+            ],
+            [
+              59,
+              10
+            ],
+            [
+              119,
+              10
+            ]
+          ]
+        },
+        {
+          "service": "cache",
+          "metric": "rps",
+          "points": [
+            [
+              0,
+              320
+            ],
+            [
+              57,
+              320
+            ],
+            [
+              58,
+              1600
+            ],
+            [
+              119,
+              1600
+            ]
+          ]
+        },
+        {
+          "service": "cache",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              8
+            ],
+            [
+              60,
+              8
+            ],
+            [
+              61,
+              18
+            ],
+            [
+              119,
+              18
+            ]
+          ]
+        },
+        {
+          "service": "gateway",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              59,
+              0.2
+            ],
+            [
+              60,
+              6
+            ],
+            [
+              119,
+              6
+            ]
+          ]
+        },
+        {
+          "service": "gateway",
+          "metric": "rps",
+          "points": [
+            [
+              0,
+              500
+            ],
+            [
+              56,
+              500
+            ],
+            [
+              57,
+              2100
+            ],
+            [
+              119,
+              2100
+            ]
+          ]
+        }
+      ],
+      "logs": [
+        {
+          "t": 58,
+          "service": "auth",
+          "level": "WARN",
+          "msg": "refresh arrivals 1800 per second; accepted service capacity 650 per second"
+        },
+        {
+          "t": 105,
+          "service": "auth",
+          "level": "WARN",
+          "msg": "queue length 920 while session-refresh arrivals remain elevated"
+        },
+        {
+          "t": 106,
+          "service": "auth",
+          "level": "INFO",
+          "msg": "reload completed: request quota and worker configuration unchanged"
+        },
+        {
+          "t": 108,
+          "service": "cache",
+          "level": "INFO",
+          "msg": "lookup latency 18ms; no evictions or failed lookups"
+        }
+      ],
+      "events": [
+        {
+          "t": 61,
+          "service": "auth",
+          "kind": "config_change",
+          "summary": "logging configuration reloaded",
+          "detail": "Only log sampling changes; quotas and worker counts unchanged."
+        }
+      ],
+      "probes": [
+        {
+          "tool": "query_metric",
+          "args": {
+            "service": "auth",
+            "metric": "rps"
+          },
+          "contains": "first sustained deviation: t=",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "auth",
+            "limit": 20
+          },
+          "contains": "service capacity 650",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "auth",
+            "limit": 20
+          },
+          "contains": "worker configuration unchanged",
+          "role": "counterevidence"
+        }
+      ],
+      "traces": [
+        {
+          "t": 110,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 2300,
+              "status": "timeout",
+              "note": ""
+            },
+            {
+              "service": "auth",
+              "ms": 2100,
+              "status": "timeout",
+              "note": "refresh queue delay"
+            }
+          ]
+        }
+      ],
+      "health_overrides": {
+        "auth": {
+          "status": "degraded"
+        },
+        "gateway": {
+          "status": "degraded"
+        }
+      },
+      "missing_logs": [],
+      "id": "authored-v1-007",
+      "gold_tools": [
+        "logs",
+        "metric"
+      ],
+      "gold_services": [
+        "auth"
+      ],
+      "fix": {
+        "action": "scale_up",
+        "target": "auth"
+      }
+    },
+    {
+      "title": "Database endpoint fenced after promotion",
+      "fault_type": "dependency_outage",
+      "root_service": "postgres",
+      "difficulty": "hard",
+      "onset": 81,
+      "narrative": "A database promotion at minute 81 fences the old writer endpoint. Orders and payments both reach that endpoint but receive write-service unavailable responses. Postgres remains responsive to process health checks, so liveness alone is misleading. A payments deployment at minute 80 is unrelated because orders fails independently and both see the same writer fence. Fail over database connections to the available writer endpoint.",
+      "distractors": [
+        "The payments release is temporally close, but orders has no new release and receives the same writer-fenced error."
+      ],
+      "profiles": [
+        {
+          "service": "postgres",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.1
+            ],
+            [
+              80,
+              0.1
+            ],
+            [
+              81,
+              38
+            ],
+            [
+              119,
+              38
+            ]
+          ]
+        },
+        {
+          "service": "orders",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              81,
+              0.2
+            ],
+            [
+              82,
+              20
+            ],
+            [
+              119,
+              20
+            ]
+          ]
+        },
+        {
+          "service": "payments",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              81,
+              0.2
+            ],
+            [
+              82,
+              32
+            ],
+            [
+              119,
+              32
+            ]
+          ]
+        },
+        {
+          "service": "gateway",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              82,
+              0.2
+            ],
+            [
+              83,
+              14
+            ],
+            [
+              119,
+              14
+            ]
+          ]
+        }
+      ],
+      "logs": [
+        {
+          "t": 110,
+          "service": "postgres",
+          "level": "ERROR",
+          "msg": "old writer endpoint fenced after promotion; write service unavailable on current address"
+        },
+        {
+          "t": 111,
+          "service": "orders",
+          "level": "ERROR",
+          "msg": "database endpoint reports writer fenced; order insert not admitted"
+        },
+        {
+          "t": 112,
+          "service": "payments",
+          "level": "ERROR",
+          "msg": "database endpoint reports writer fenced; ledger insert not admitted"
+        },
+        {
+          "t": 113,
+          "service": "postgres",
+          "level": "INFO",
+          "msg": "alternate writer endpoint is accepting writes; old endpoint process remains live"
+        }
+      ],
+      "events": [
+        {
+          "t": 80,
+          "service": "payments",
+          "kind": "deploy",
+          "summary": "release p61 activated",
+          "detail": "Telemetry naming change; database target unchanged."
+        }
+      ],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "postgres",
+            "limit": 20
+          },
+          "contains": "alternate writer endpoint is accepting writes",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "orders",
+            "limit": 20
+          },
+          "contains": "writer fenced",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "payments",
+            "limit": 20
+          },
+          "contains": "ledger insert not admitted",
+          "role": "counterevidence"
+        }
+      ],
+      "traces": [
+        {
+          "t": 109,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 180,
+              "status": "error",
+              "note": ""
+            },
+            {
+              "service": "orders",
+              "ms": 120,
+              "status": "error",
+              "note": ""
+            },
+            {
+              "service": "postgres",
+              "ms": 25,
+              "status": "error",
+              "note": "writer service fenced"
+            }
+          ]
+        }
+      ],
+      "health_overrides": {
+        "postgres": {
+          "status": "degraded"
+        },
+        "orders": {
+          "status": "degraded"
+        },
+        "payments": {
+          "status": "degraded"
+        },
+        "gateway": {
+          "status": "degraded"
+        }
+      },
+      "missing_logs": [],
+      "id": "authored-v1-008",
+      "gold_tools": [
+        "logs"
+      ],
+      "gold_services": [
+        "postgres",
+        "orders"
+      ],
+      "fix": {
+        "action": "failover",
+        "target": "postgres"
+      }
+    },
+    {
+      "title": "The ranking codec canary missed packed results",
+      "fault_type": "bad_deploy",
+      "root_service": "search",
+      "difficulty": "hard",
+      "onset": 66,
+      "narrative": "Search release s70 enables a packed-result decoder incompatible with the existing index format. Small canary queries passed, but normal packed results fail immediately on rollout. Search application logs are absent during collection; the release notes and trace decoder failure must be combined with normal cache behavior. Roll back search to s69.",
+      "distractors": [
+        "A cache sizing change at minute 63 is close, but search traces show the decoder fails after cache lookup succeeds."
+      ],
+      "profiles": [
+        {
+          "service": "search",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              65,
+              0.2
+            ],
+            [
+              66,
+              31
+            ],
+            [
+              119,
+              31
+            ]
+          ]
+        },
+        {
+          "service": "gateway",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              66,
+              0.2
+            ],
+            [
+              67,
+              11
+            ],
+            [
+              119,
+              11
+            ]
+          ]
+        }
+      ],
+      "logs": [
+        {
+          "t": 109,
+          "service": "cache",
+          "level": "INFO",
+          "msg": "search query lookup delivered payload successfully; hit ratio 96 percent"
+        },
+        {
+          "t": 110,
+          "service": "gateway",
+          "level": "ERROR",
+          "msg": "search response unavailable after ranking decode stage"
+        }
+      ],
+      "events": [
+        {
+          "t": 63,
+          "service": "cache",
+          "kind": "config_change",
+          "summary": "cache allocation limit raised",
+          "detail": "Additional memory allocated; no eviction or connectivity event."
+        },
+        {
+          "t": 66,
+          "service": "search",
+          "kind": "deploy",
+          "summary": "release s69 to s70",
+          "detail": "Packed-result decoder updated; canary covered unpacked single results only."
+        }
+      ],
+      "probes": [
+        {
+          "tool": "get_events",
+          "args": {
+            "service": "search"
+          },
+          "contains": "s69 to s70",
+          "role": "support"
+        },
+        {
+          "tool": "get_trace",
+          "args": {
+            "status": "error"
+          },
+          "contains": "packed result codec incompatible",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "cache",
+            "limit": 20
+          },
+          "contains": "delivered payload successfully",
+          "role": "counterevidence"
+        }
+      ],
+      "traces": [
+        {
+          "t": 111,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 180,
+              "status": "error",
+              "note": ""
+            },
+            {
+              "service": "search",
+              "ms": 95,
+              "status": "error",
+              "note": "packed result codec incompatible after cache read"
+            }
+          ]
+        },
+        {
+          "t": 112,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 180,
+              "status": "ok",
+              "note": ""
+            },
+            {
+              "service": "auth",
+              "ms": 45,
+              "status": "ok",
+              "note": ""
+            },
+            {
+              "service": "cache",
+              "ms": 8,
+              "status": "ok",
+              "note": ""
+            }
+          ]
+        }
+      ],
+      "health_overrides": {
+        "search": {
+          "status": "degraded"
+        },
+        "gateway": {
+          "status": "degraded"
+        }
+      },
+      "missing_logs": [
+        "search"
+      ],
+      "id": "authored-v1-009",
+      "gold_tools": [
+        "events",
+        "trace"
+      ],
+      "gold_services": [
+        "search"
+      ],
+      "fix": {
+        "action": "rollback",
+        "target": "search"
+      }
+    },
+    {
+      "title": "Slow search with unchanged request volume",
+      "fault_type": "feature_flag",
+      "root_service": "inventory",
+      "difficulty": "medium",
+      "onset": 72,
+      "narrative": "An eager-stock-expansion flag in inventory adds 40 cache reads per stock request. Inventory traffic remains 150/s while inventory latency and cache request volume rise at minute 72. Search becomes slow as collateral load reaches its shared cache, despite its recent deployment. Disable inventory eager expansion.",
+      "distractors": [
+        "Search release s12 precedes the event, but search arrivals are unchanged and inventory records the new cache fanout."
+      ],
+      "profiles": [
+        {
+          "service": "inventory",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              70
+            ],
+            [
+              71,
+              70
+            ],
+            [
+              72,
+              1600
+            ],
+            [
+              119,
+              1600
+            ]
+          ]
+        },
+        {
+          "service": "inventory",
+          "metric": "cpu",
+          "points": [
+            [
+              0,
+              29
+            ],
+            [
+              71,
+              29
+            ],
+            [
+              72,
+              58
+            ],
+            [
+              119,
+              58
+            ]
+          ]
+        },
+        {
+          "service": "cache",
+          "metric": "rps",
+          "points": [
+            [
+              0,
+              320
+            ],
+            [
+              71,
+              320
+            ],
+            [
+              72,
+              6170
+            ],
+            [
+              119,
+              6170
+            ]
+          ]
+        },
+        {
+          "service": "cache",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              8
+            ],
+            [
+              72,
+              8
+            ],
+            [
+              73,
+              170
+            ],
+            [
+              119,
+              170
+            ]
+          ]
+        },
+        {
+          "service": "cache",
+          "metric": "hit_rate",
+          "points": [
+            [
+              0,
+              96
+            ],
+            [
+              71,
+              96
+            ],
+            [
+              72,
+              71
+            ],
+            [
+              119,
+              71
+            ]
+          ]
+        },
+        {
+          "service": "search",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              95
+            ],
+            [
+              72,
+              95
+            ],
+            [
+              73,
+              420
+            ],
+            [
+              119,
+              420
+            ]
+          ]
+        },
+        {
+          "service": "orders",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              120
+            ],
+            [
+              72,
+              120
+            ],
+            [
+              73,
+              1800
+            ],
+            [
+              119,
+              1800
+            ]
+          ]
+        }
+      ],
+      "logs": [
+        {
+          "t": 73,
+          "service": "inventory",
+          "level": "WARN",
+          "msg": "eager-stock-expansion enabled: 40 cache reads per stock request instead of 1"
+        },
+        {
+          "t": 108,
+          "service": "inventory",
+          "level": "INFO",
+          "msg": "incoming stock requests remain 150/s while fanout remains 40"
+        },
+        {
+          "t": 111,
+          "service": "search",
+          "level": "INFO",
+          "msg": "release s12 request shape unchanged; waiting for shared cache"
+        }
+      ],
+      "events": [
+        {
+          "t": 69,
+          "service": "search",
+          "kind": "deploy",
+          "summary": "release s12 activated",
+          "detail": "Result text formatting update."
+        },
+        {
+          "t": 72,
+          "service": "inventory",
+          "kind": "flag_change",
+          "summary": "eager-stock-expansion switched on",
+          "detail": "Expand stock availability for every item in each bundle."
+        }
+      ],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "inventory",
+            "limit": 20
+          },
+          "contains": "40 cache reads",
+          "role": "support"
+        },
+        {
+          "tool": "get_events",
+          "args": {
+            "service": "inventory"
+          },
+          "contains": "eager-stock-expansion switched on",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "search",
+            "limit": 20
+          },
+          "contains": "request shape unchanged",
+          "role": "counterevidence"
+        }
+      ],
+      "traces": [
+        {
+          "t": 110,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 2000,
+              "status": "timeout",
+              "note": ""
+            },
+            {
+              "service": "orders",
+              "ms": 1800,
+              "status": "timeout",
+              "note": ""
+            },
+            {
+              "service": "inventory",
+              "ms": 1600,
+              "status": "timeout",
+              "note": "cache fanout work"
+            }
+          ]
+        },
+        {
+          "t": 112,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 600,
+              "status": "ok",
+              "note": ""
+            },
+            {
+              "service": "search",
+              "ms": 420,
+              "status": "ok",
+              "note": ""
+            },
+            {
+              "service": "cache",
+              "ms": 170,
+              "status": "ok",
+              "note": "shared load"
+            }
+          ]
+        }
+      ],
+      "health_overrides": {
+        "inventory": {
+          "status": "degraded"
+        },
+        "cache": {
+          "status": "degraded"
+        },
+        "search": {
+          "status": "degraded"
+        }
+      },
+      "missing_logs": [],
+      "id": "authored-v1-010",
+      "gold_tools": [
+        "events",
+        "logs"
+      ],
+      "gold_services": [
+        "inventory"
+      ],
+      "fix": {
+        "action": "disable_flag",
+        "target": "inventory"
+      }
+    },
+    {
+      "title": "Healthy application, expired search listener",
+      "fault_type": "cert_expiry",
+      "root_service": "search",
+      "difficulty": "hard",
+      "onset": 88,
+      "narrative": "Search listener certificate expires at minute 88. Gateway TLS requests fail before search handles them, although the local search application health check remains responsive. A search release at minute 87 changed only query highlighting. Renew the listener certificate; restarting the healthy application or rolling back highlighting cannot extend its validity.",
+      "distractors": [
+        "The minute-87 search deployment is closer than the maintenance history, but its local acceptance check passes and the failed handshake identifies the expired listener credential."
+      ],
+      "profiles": [
+        {
+          "service": "search",
+          "metric": "rps",
+          "points": [
+            [
+              0,
+              140
+            ],
+            [
+              87,
+              140
+            ],
+            [
+              88,
+              0
+            ],
+            [
+              119,
+              0
+            ]
+          ]
+        },
+        {
+          "service": "gateway",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              87,
+              0.2
+            ],
+            [
+              88,
+              16
+            ],
+            [
+              119,
+              16
+            ]
+          ]
+        }
+      ],
+      "logs": [
+        {
+          "t": 109,
+          "service": "gateway",
+          "level": "ERROR",
+          "msg": "search TLS listener validity ended at minute 88; request rejected before HTTP"
+        },
+        {
+          "t": 110,
+          "service": "search",
+          "level": "INFO",
+          "msg": "local application probe passed; no HTTP request received from gateway"
+        },
+        {
+          "t": 111,
+          "service": "search",
+          "level": "INFO",
+          "msg": "highlighting release s88 passes local query checks"
+        }
+      ],
+      "events": [
+        {
+          "t": 87,
+          "service": "search",
+          "kind": "deploy",
+          "summary": "highlighting release s88 activated",
+          "detail": "Presentation-only query highlighting; listener certificate unchanged."
+        }
+      ],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "gateway",
+            "limit": 20
+          },
+          "contains": "validity ended at minute 88",
+          "role": "support"
+        },
+        {
+          "tool": "health_check",
+          "args": {
+            "service": "search"
+          },
+          "contains": "tls_cert_days_left=-2",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "search",
+            "limit": 20
+          },
+          "contains": "local query checks",
+          "role": "counterevidence"
+        }
+      ],
+      "traces": [
+        {
+          "t": 108,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 32,
+              "status": "error",
+              "note": "search TLS listener credential expired"
+            }
+          ]
+        }
+      ],
+      "health_overrides": {
+        "search": {
+          "status": "degraded",
+          "cert_days_left": -2
+        },
+        "gateway": {
+          "status": "degraded"
+        }
+      },
+      "missing_logs": [],
+      "id": "authored-v1-011",
+      "gold_tools": [
+        "health",
+        "logs"
+      ],
+      "gold_services": [
+        "search",
+        "gateway"
+      ],
+      "fix": {
+        "action": "renew_cert",
+        "target": "search"
+      }
+    },
+    {
+      "title": "Requests rejected at the gateway boundary",
+      "fault_type": "config_regression",
+      "root_service": "gateway",
+      "difficulty": "hard",
+      "onset": 59,
+      "narrative": "A gateway configuration sync lowers maximum request body size from 2MB to 2KB at minute 59. Normal checkout requests are rejected at ingress and do not reach orders, whose inbound traffic falls. Inventory latency has a brief unrelated pre-incident spike and returns to normal. Revert the gateway body-size configuration.",
+      "distractors": [
+        "A short inventory batch at minute 50 produced a latency spike that ended before checkout rejection began."
+      ],
+      "profiles": [
+        {
+          "service": "gateway",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              58,
+              0.2
+            ],
+            [
+              59,
+              19
+            ],
+            [
+              119,
+              19
+            ]
+          ]
+        },
+        {
+          "service": "orders",
+          "metric": "rps",
+          "points": [
+            [
+              0,
+              160
+            ],
+            [
+              58,
+              160
+            ],
+            [
+              59,
+              95
+            ],
+            [
+              119,
+              95
+            ]
+          ]
+        },
+        {
+          "service": "inventory",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              70
+            ],
+            [
+              49,
+              70
+            ],
+            [
+              50,
+              600
+            ],
+            [
+              53,
+              70
+            ],
+            [
+              119,
+              70
+            ]
+          ]
+        }
+      ],
+      "logs": [
+        {
+          "t": 60,
+          "service": "gateway",
+          "level": "ERROR",
+          "msg": "request body 18340 bytes exceeds configured limit 2048 bytes; rejected before upstream dispatch"
+        },
+        {
+          "t": 108,
+          "service": "gateway",
+          "level": "INFO",
+          "msg": "config audit: body limit was 2097152 bytes before minute 59 sync"
+        },
+        {
+          "t": 110,
+          "service": "orders",
+          "level": "INFO",
+          "msg": "checkout ingress reduced; accepted requests finish normally"
+        },
+        {
+          "t": 111,
+          "service": "inventory",
+          "level": "INFO",
+          "msg": "background stock batch finished at minute 53; current latency 70ms"
+        }
+      ],
+      "events": [
+        {
+          "t": 50,
+          "service": "inventory",
+          "kind": "config_change",
+          "summary": "temporary batch concurrency applied",
+          "detail": "Batch completed and concurrency restored at minute 53."
+        }
+      ],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "gateway",
+            "limit": 20
+          },
+          "contains": "configured limit 2048 bytes",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "gateway",
+            "limit": 20
+          },
+          "contains": "2097152 bytes before",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "orders",
+            "limit": 20
+          },
+          "contains": "finish normally",
+          "role": "counterevidence"
+        }
+      ],
+      "traces": [
+        {
+          "t": 109,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 3,
+              "status": "error",
+              "note": "request rejected by ingress size policy"
+            }
+          ]
+        },
+        {
+          "t": 111,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 180,
+              "status": "ok",
+              "note": "small request accepted"
+            },
+            {
+              "service": "orders",
+              "ms": 120,
+              "status": "ok",
+              "note": ""
+            },
+            {
+              "service": "inventory",
+              "ms": 70,
+              "status": "ok",
+              "note": ""
+            },
+            {
+              "service": "cache",
+              "ms": 8,
+              "status": "ok",
+              "note": ""
+            }
+          ]
+        }
+      ],
+      "health_overrides": {
+        "gateway": {
+          "status": "degraded"
+        }
+      },
+      "missing_logs": [],
+      "id": "authored-v1-012",
+      "gold_tools": [
+        "logs"
+      ],
+      "gold_services": [
+        "gateway"
+      ],
+      "fix": {
+        "action": "revert_config",
+        "target": "gateway"
+      }
+    },
+    {
+      "title": "Index removal mistaken for demand growth",
+      "fault_type": "bad_migration",
+      "root_service": "postgres",
+      "difficulty": "medium",
+      "onset": 67,
+      "narrative": "The postgres migration at minute 67 removes the index used by order lookup. The query plan changes to sequential scans, increasing database CPU and latency under unchanged arrival rate. Lock waits remain at baseline, distinguishing this from a blocking rewrite. A gateway rollout at minute 68 follows the degradation. Roll back the migration and restore the index.",
+      "distractors": [
+        "The gateway release occurs after database scans rise; ingress request volume is unchanged."
+      ],
+      "profiles": [
+        {
+          "service": "postgres",
+          "metric": "cpu",
+          "points": [
+            [
+              0,
+              35
+            ],
+            [
+              66,
+              35
+            ],
+            [
+              67,
+              94
+            ],
+            [
+              119,
+              94
+            ]
+          ]
+        },
+        {
+          "service": "postgres",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              25
+            ],
+            [
+              66,
+              25
+            ],
+            [
+              67,
+              1900
+            ],
+            [
+              119,
+              1900
+            ]
+          ]
+        },
+        {
+          "service": "orders",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              120
+            ],
+            [
+              67,
+              120
+            ],
+            [
+              68,
+              2300
+            ],
+            [
+              119,
+              2300
+            ]
+          ]
+        },
+        {
+          "service": "gateway",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              180
+            ],
+            [
+              68,
+              180
+            ],
+            [
+              69,
+              2600
+            ],
+            [
+              119,
+              2600
+            ]
+          ]
+        }
+      ],
+      "logs": [
+        {
+          "t": 68,
+          "service": "postgres",
+          "level": "WARN",
+          "msg": "order lookup plan switched from orders_customer_idx to sequential scan after index removal"
+        },
+        {
+          "t": 109,
+          "service": "postgres",
+          "level": "INFO",
+          "msg": "request arrival rate stable at 220/s; lock waits remain 4ms"
+        },
+        {
+          "t": 112,
+          "service": "gateway",
+          "level": "INFO",
+          "msg": "release g42 frontend headers only; ingress volume remains 500/s"
+        }
+      ],
+      "events": [
+        {
+          "t": 67,
+          "service": "postgres",
+          "kind": "migration",
+          "summary": "orders_customer_idx removed",
+          "detail": "Cleanup migration drops index used by customer order lookup."
+        },
+        {
+          "t": 68,
+          "service": "gateway",
+          "kind": "deploy",
+          "summary": "release g42 activated",
+          "detail": "Frontend header changes only."
+        }
+      ],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "postgres",
+            "limit": 20
+          },
+          "contains": "sequential scan after index removal",
+          "role": "support"
+        },
+        {
+          "tool": "get_events",
+          "args": {
+            "service": "postgres"
+          },
+          "contains": "orders_customer_idx removed",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "postgres",
+            "limit": 20
+          },
+          "contains": "lock waits remain 4ms",
+          "role": "counterevidence"
+        }
+      ],
+      "traces": [
+        {
+          "t": 111,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 2600,
+              "status": "timeout",
+              "note": ""
+            },
+            {
+              "service": "orders",
+              "ms": 2300,
+              "status": "timeout",
+              "note": ""
+            },
+            {
+              "service": "postgres",
+              "ms": 1900,
+              "status": "timeout",
+              "note": "sequential scan after index removal"
+            }
+          ]
+        }
+      ],
+      "health_overrides": {
+        "postgres": {
+          "status": "degraded"
+        }
+      },
+      "missing_logs": [],
+      "id": "authored-v1-013",
+      "gold_tools": [
+        "events",
+        "logs"
+      ],
+      "gold_services": [
+        "postgres"
+      ],
+      "fix": {
+        "action": "rollback_migration",
+        "target": "postgres"
+      }
+    },
+    {
+      "title": "Search arrivals overwhelm an unchanged deployment",
+      "fault_type": "traffic_surge",
+      "root_service": "search",
+      "difficulty": "hard",
+      "onset": 79,
+      "narrative": "An external catalogue crawler sends search traffic from 140/s to 2400/s at minute 79. Query CPU and queue delay rise before downstream cache response time changes. Search logs are missing; the request-rate and CPU metric changes plus gateway traffic attribution and trace queue time distinguish demand growth from the unrelated earlier search release. Scale search capacity.",
+      "distractors": [
+        "Search release s90 occurred at minute 70 with stable error rates until the crawler wave nine minutes later."
+      ],
+      "profiles": [
+        {
+          "service": "search",
+          "metric": "rps",
+          "points": [
+            [
+              0,
+              140
+            ],
+            [
+              78,
+              140
+            ],
+            [
+              79,
+              2400
+            ],
+            [
+              119,
+              2400
+            ]
+          ]
+        },
+        {
+          "service": "search",
+          "metric": "cpu",
+          "points": [
+            [
+              0,
+              31
+            ],
+            [
+              79,
+              31
+            ],
+            [
+              80,
+              98
+            ],
+            [
+              119,
+              98
+            ]
+          ]
+        },
+        {
+          "service": "search",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              95
+            ],
+            [
+              80,
+              95
+            ],
+            [
+              81,
+              2600
+            ],
+            [
+              119,
+              2600
+            ]
+          ]
+        },
+        {
+          "service": "search",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              80,
+              0.2
+            ],
+            [
+              81,
+              12
+            ],
+            [
+              119,
+              12
+            ]
+          ]
+        },
+        {
+          "service": "gateway",
+          "metric": "rps",
+          "points": [
+            [
+              0,
+              500
+            ],
+            [
+              78,
+              500
+            ],
+            [
+              79,
+              2760
+            ],
+            [
+              119,
+              2760
+            ]
+          ]
+        },
+        {
+          "service": "gateway",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              81,
+              0.2
+            ],
+            [
+              82,
+              8
+            ],
+            [
+              119,
+              8
+            ]
+          ]
+        },
+        {
+          "service": "cache",
+          "metric": "rps",
+          "points": [
+            [
+              0,
+              320
+            ],
+            [
+              79,
+              320
+            ],
+            [
+              80,
+              2580
+            ],
+            [
+              119,
+              2580
+            ]
+          ]
+        },
+        {
+          "service": "cache",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              8
+            ],
+            [
+              83,
+              8
+            ],
+            [
+              84,
+              21
+            ],
+            [
+              119,
+              21
+            ]
+          ]
+        }
+      ],
+      "logs": [
+        {
+          "t": 110,
+          "service": "gateway",
+          "level": "WARN",
+          "msg": "catalogue crawler contributed 2260 additional search requests per second; other routes stable"
+        },
+        {
+          "t": 111,
+          "service": "cache",
+          "level": "INFO",
+          "msg": "search lookups delayed 21ms; no connectivity failures"
+        }
+      ],
+      "events": [
+        {
+          "t": 70,
+          "service": "search",
+          "kind": "deploy",
+          "summary": "release s90 activated",
+          "detail": "Synonym dictionary update; canary and following eight minutes were stable."
+        }
+      ],
+      "probes": [
+        {
+          "tool": "query_metric",
+          "args": {
+            "service": "search",
+            "metric": "rps"
+          },
+          "contains": "first sustained deviation: t=",
+          "role": "support"
+        },
+        {
+          "tool": "get_trace",
+          "args": {
+            "status": "timeout"
+          },
+          "contains": "search queue residence 2300ms",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "cache",
+            "limit": 20
+          },
+          "contains": "no connectivity failures",
+          "role": "counterevidence"
+        }
+      ],
+      "traces": [
+        {
+          "t": 110,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 2800,
+              "status": "timeout",
+              "note": ""
+            },
+            {
+              "service": "search",
+              "ms": 2600,
+              "status": "timeout",
+              "note": "search queue residence 2300ms"
+            }
+          ]
+        }
+      ],
+      "health_overrides": {
+        "search": {
+          "status": "degraded"
+        },
+        "gateway": {
+          "status": "degraded"
+        }
+      },
+      "missing_logs": [
+        "search"
+      ],
+      "id": "authored-v1-014",
+      "gold_tools": [
+        "metric",
+        "trace"
+      ],
+      "gold_services": [
+        "search"
+      ],
+      "fix": {
+        "action": "scale_up",
+        "target": "search"
+      }
+    },
+    {
+      "title": "A cache address that cannot be reached",
+      "fault_type": "dependency_outage",
+      "root_service": "cache",
+      "difficulty": "medium",
+      "onset": 62,
+      "narrative": "A cache node network route disappears at minute 62. Multiple independent callers receive connection failures to the same cache address while their own processes and postgres calls remain healthy. A search flag change is coincident but cannot explain auth and inventory connection failures. Fail over the cache dependency.",
+      "distractors": [
+        "The search query flag is unrelated: auth and inventory do not run search code but fail to reach the same cache address."
+      ],
+      "profiles": [
+        {
+          "service": "cache",
+          "metric": "rps",
+          "points": [
+            [
+              0,
+              320
+            ],
+            [
+              61,
+              320
+            ],
+            [
+              62,
+              0
+            ],
+            [
+              119,
+              0
+            ]
+          ]
+        },
+        {
+          "service": "cache",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.1
+            ],
+            [
+              61,
+              0.1
+            ],
+            [
+              62,
+              100
+            ],
+            [
+              119,
+              100
+            ]
+          ]
+        },
+        {
+          "service": "auth",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              62,
+              0.2
+            ],
+            [
+              63,
+              18
+            ],
+            [
+              119,
+              18
+            ]
+          ]
+        },
+        {
+          "service": "inventory",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              62,
+              0.2
+            ],
+            [
+              63,
+              21
+            ],
+            [
+              119,
+              21
+            ]
+          ]
+        },
+        {
+          "service": "search",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              62,
+              0.2
+            ],
+            [
+              63,
+              28
+            ],
+            [
+              119,
+              28
+            ]
+          ]
+        },
+        {
+          "service": "gateway",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              63,
+              0.2
+            ],
+            [
+              64,
+              23
+            ],
+            [
+              119,
+              23
+            ]
+          ]
+        }
+      ],
+      "logs": [
+        {
+          "t": 109,
+          "service": "auth",
+          "level": "ERROR",
+          "msg": "cache address 10.8.0.4 unreachable; network route absent"
+        },
+        {
+          "t": 110,
+          "service": "inventory",
+          "level": "ERROR",
+          "msg": "cache address 10.8.0.4 unreachable; stock database read succeeds"
+        },
+        {
+          "t": 111,
+          "service": "search",
+          "level": "ERROR",
+          "msg": "cache address 10.8.0.4 unreachable before query flag branch"
+        },
+        {
+          "t": 112,
+          "service": "postgres",
+          "level": "INFO",
+          "msg": "orders and inventory database reads complete within 25ms"
+        }
+      ],
+      "events": [
+        {
+          "t": 62,
+          "service": "search",
+          "kind": "flag_change",
+          "summary": "search query flag toggled",
+          "detail": "Change affects search result ordering only."
+        }
+      ],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "auth",
+            "limit": 20
+          },
+          "contains": "network route absent",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "inventory",
+            "limit": 20
+          },
+          "contains": "stock database read succeeds",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "search",
+            "limit": 20
+          },
+          "contains": "before query flag branch",
+          "role": "counterevidence"
+        }
+      ],
+      "traces": [
+        {
+          "t": 110,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 1000,
+              "status": "error",
+              "note": ""
+            },
+            {
+              "service": "auth",
+              "ms": 900,
+              "status": "error",
+              "note": "cache address unreachable"
+            }
+          ]
+        }
+      ],
+      "health_overrides": {
+        "cache": {
+          "status": "down"
+        },
+        "auth": {
+          "status": "degraded"
+        },
+        "inventory": {
+          "status": "degraded"
+        },
+        "search": {
+          "status": "degraded"
+        },
+        "gateway": {
+          "status": "degraded"
+        }
+      },
+      "missing_logs": [],
+      "id": "authored-v1-015",
+      "gold_tools": [
+        "logs"
+      ],
+      "gold_services": [
+        "cache",
+        "auth",
+        "inventory"
+      ],
+      "fix": {
+        "action": "failover",
+        "target": "cache"
+      }
+    },
+    {
+      "title": "Orders memory grows despite steady traffic",
+      "fault_type": "resource_leak",
+      "root_service": "orders",
+      "difficulty": "medium",
+      "onset": 55,
+      "narrative": "Orders release o81 adds subscription callbacks that remain retained after checkout completes. Under flat arrivals, memory grows from 42% to 95% and major pauses appear; the process restarts twice and callers become slow. A payments rollout at minute 75 is a distractor because callback retention and memory growth started earlier. Roll back orders to o80.",
+      "distractors": [
+        "Payments release p82 at minute 75 occurs after retained subscriptions and memory growth begin; payment processing latency stays at baseline."
+      ],
+      "profiles": [
+        {
+          "service": "orders",
+          "metric": "memory",
+          "points": [
+            [
+              0,
+              42
+            ],
+            [
+              55,
+              42
+            ],
+            [
+              119,
+              95
+            ]
+          ]
+        },
+        {
+          "service": "orders",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              120
+            ],
+            [
+              89,
+              120
+            ],
+            [
+              90,
+              2400
+            ],
+            [
+              119,
+              2400
+            ]
+          ]
+        },
+        {
+          "service": "orders",
+          "metric": "error_rate",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              89,
+              0.2
+            ],
+            [
+              90,
+              9
+            ],
+            [
+              119,
+              9
+            ]
+          ]
+        },
+        {
+          "service": "gateway",
+          "metric": "latency_p99",
+          "points": [
+            [
+              0,
+              180
+            ],
+            [
+              90,
+              180
+            ],
+            [
+              91,
+              2700
+            ],
+            [
+              119,
+              2700
+            ]
+          ]
+        }
+      ],
+      "logs": [
+        {
+          "t": 56,
+          "service": "orders",
+          "level": "INFO",
+          "msg": "completed checkout subscriptions remain retained after release o81"
+        },
+        {
+          "t": 89,
+          "service": "orders",
+          "level": "WARN",
+          "msg": "retained callback count 126000; completed request objects still referenced"
+        },
+        {
+          "t": 112,
+          "service": "orders",
+          "level": "ERROR",
+          "msg": "major memory pause 2100ms; process restarted twice during this hour"
+        },
+        {
+          "t": 114,
+          "service": "payments",
+          "level": "INFO",
+          "msg": "release p82 processing latency steady at 90ms; payment traffic unchanged"
+        }
+      ],
+      "events": [
+        {
+          "t": 54,
+          "service": "orders",
+          "kind": "deploy",
+          "summary": "release o80 to o81",
+          "detail": "Checkout lifecycle subscription callback implementation changed."
+        },
+        {
+          "t": 75,
+          "service": "payments",
+          "kind": "deploy",
+          "summary": "release p82 activated",
+          "detail": "Payment log formatting update."
+        }
+      ],
+      "probes": [
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "orders",
+            "limit": 20
+          },
+          "contains": "completed request objects still referenced",
+          "role": "support"
+        },
+        {
+          "tool": "query_metric",
+          "args": {
+            "service": "orders",
+            "metric": "memory"
+          },
+          "contains": "first sustained deviation: t=",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "payments",
+            "limit": 20
+          },
+          "contains": "latency steady at 90ms",
+          "role": "counterevidence"
+        }
+      ],
+      "traces": [
+        {
+          "t": 110,
+          "spans": [
+            {
+              "service": "gateway",
+              "ms": 2700,
+              "status": "timeout",
+              "note": ""
+            },
+            {
+              "service": "orders",
+              "ms": 2400,
+              "status": "timeout",
+              "note": "memory pause before dispatch"
+            }
+          ]
+        }
+      ],
+      "health_overrides": {
+        "orders": {
+          "status": "degraded",
+          "restarts_1h": 2
+        }
+      },
+      "missing_logs": [],
+      "id": "authored-v1-016",
+      "gold_tools": [
+        "logs",
+        "metric"
+      ],
+      "gold_services": [
+        "orders"
+      ],
+      "fix": {
+        "action": "rollback",
+        "target": "orders"
+      }
+    }
+  ]
+}
