@@ -29,6 +29,9 @@ def parser():
                      default="max_completion_tokens", help="Output limit field for compatible endpoints")
     run.add_argument("--max-output-tokens", type=int, default=768)
     run.add_argument("--timeout", type=float, default=60.0)
+    run.add_argument("--request-interval", type=float, default=0.0,
+                     help="Minimum seconds between HTTP attempt starts, including retries (0–60)")
+    run.add_argument("--progress", action="store_true", help="Print completed episode status to stderr")
     run.add_argument("--retries", type=int, default=2)
     run.add_argument("--json-mode", action="store_true")
     run.add_argument("--budgets", default="5,10,20")
@@ -99,6 +102,7 @@ def main(argv=None):
                     api_key_env=args.api_key_env, model_revision=args.model_revision,
                     temperature=args.temperature, max_output_tokens=args.max_output_tokens,
                     token_limit_param=args.token_limit_param,
+                    request_interval=args.request_interval,
                     timeout=args.timeout, retries=args.retries, json_mode=args.json_mode,
                 )
                 backend.preflight()
@@ -106,6 +110,9 @@ def main(argv=None):
                 suite=args.suite, set_name=args.set_name, backend=backend, budgets=budgets,
                 output=args.output, case_limit=args.case_limit, resume=args.resume,
                 allow_dirty=args.allow_dirty,
+                progress=(lambda job, result: print(
+                    f"{job['job_id']}: {result['status']}; accepted={result['score']['success']}",
+                    file=sys.stderr, flush=True)) if args.progress else None,
                 episode_options={"max_model_turns": args.max_model_turns,
                                  "max_protocol_errors": args.max_protocol_errors,
                                  "max_prompt_chars": args.max_prompt_chars},

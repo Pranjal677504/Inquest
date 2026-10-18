@@ -146,6 +146,47 @@ def test_retryable_status_is_bounded_and_recorded(monkeypatch):
     assert any(e.get("status") == 429 for e in events)
 
 
+@pytest.mark.parametrize("retry", [False, True])
+def test_request_spacing_covers_retries_and_separate_completions(monkeypatch, retry):
+    from types import SimpleNamespace
+    clock, starts, waits = [0.0], [], []
+    def sleep(seconds):
+        waits.append(seconds)
+        clock[0] += seconds
+    monkeypatch.setattr("inquest.backends.time", SimpleNamespace(monotonic=lambda: clock[0], sleep=sleep))
+    responses = [(429, {}) if retry else (200, completion()), (200, completion())]
+    with server(responses) as (base, requests):
+        backend = adapter(base, request_interval=15, retries=1)
+        def emit(kind, body):
+            if kind == "transport_attempt":
+                starts.append(clock[0])
+        backend.complete([], emit)
+        if not retry:
+            clock[0] += 5  # Already elapsed response/processing time reduces the remaining wait.
+            backend.complete([], emit)
+    assert len(requests) == 2 and starts == [0.0, 15.0]
+    assert sum(waits) == (15 if retry else 10)
+    assert backend.identity()["request_interval_seconds"] == 15
+
+
+def test_sufficient_elapsed_time_requires_no_pacing_sleep(monkeypatch):
+    from types import SimpleNamespace
+    clock, waits = [0.0], []
+    monkeypatch.setattr("inquest.backends.time", SimpleNamespace(monotonic=lambda: clock[0], sleep=waits.append))
+    with server([(200, completion()), (200, completion())]) as (base, requests):
+        backend = adapter(base, request_interval=15)
+        backend.complete([], lambda *args: None)
+        clock[0] = 20
+        backend.complete([], lambda *args: None)
+    assert len(requests) == 2 and waits == []
+
+
+@pytest.mark.parametrize("value", [-1, 61, float("nan"), float("inf"), True, "15"])
+def test_invalid_request_intervals_fail_before_network(value):
+    with pytest.raises(ValueError, match="Request interval"):
+        adapter("http://127.0.0.1:1", request_interval=value)
+
+
 @pytest.mark.parametrize("status", [400, 401, 403, 302])
 def test_nonretryable_errors_and_redirects_do_not_leak_response_bodies(status):
     events = []

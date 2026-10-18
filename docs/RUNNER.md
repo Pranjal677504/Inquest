@@ -2,7 +2,7 @@
 
 The runner executes one JSON action at a time against the existing budgeted environment. It supports a transparent offline heuristic, a local Ollama model, and a hosted/local compatible chat-completions endpoint. Model backends receive public chat messages and observations only. The evaluator retains cases, labels, grading, IDs, and provenance.
 
-**Status:** the runner and provider contracts are tested. The included recorded experiment is an offline heuristic baseline. No actual LLM pilot has been run in this environment because no model API key, installed model, or model server was available. Mock HTTP responses and scripted test replies are software tests, not model experiments.
+**Status:** the runner and provider contracts are tested. The included recorded experiment is an offline heuristic baseline. A user-executed, one-case Gemini 3.5 Flash-Lite pilot was subsequently reviewed from its supplied archive: all six request histories, four observations, and final grading reproduced locally without calling the provider. The pilot succeeded after one corrected protocol error. The full 16-case Gemini evaluation is still pending. Mock HTTP responses and scripted test replies are software tests, not model experiments.
 
 ## Install and run without credentials
 
@@ -67,9 +67,33 @@ python -m inquest run \
   --budgets 5 --case-limit 1 --output runs/gemini-3-5-first-test
 ```
 
-Set `GEMINI_API_KEY` in the same shell first. The runner does not load `.env` automatically. Model availability, free-tier eligibility, and quotas are account-specific. This configuration has loopback request-contract coverage; a successful live Gemini evaluation has not yet been established. See Google's [compatibility guide](https://ai.google.dev/gemini-api/docs/openai) and [migration guide](https://ai.google.dev/gemini-api/docs/generate-content/whats-new-gemini-3.6).
+Set `GEMINI_API_KEY` in the same shell first. The runner does not load `.env` automatically. Model availability, free-tier eligibility, and quotas are account-specific. The supplied single-case pilot used this configuration on clean source revision `d2c3c6e6c7acac934451ab2eaed3a75aa832c1f4`, completed in 8.46 seconds, and reported 6,754 input / 149 output tokens. This is an initial integration check, not a full-suite result or evidence of calibrated confidence. See Google's [compatibility guide](https://ai.google.dev/gemini-api/docs/openai) and [migration guide](https://ai.google.dev/gemini-api/docs/generate-content/whats-new-gemini-3.6).
 
 `--omit-temperature` records a null temperature and sends no temperature field. `--token-limit-param` defaults to `max_completion_tokens`; choose `max_tokens` only for compatible endpoints that require it. These settings are included in the run fingerprint. Existing Groq and Ollama request defaults are preserved. Use a new output directory after changing code, model, or request settings; `--resume` preserves completed failures rather than retrying them.
+
+### Full 16-case evaluation with a private key prompt
+
+After installing the package in editable mode and pulling the latest committed branch, run:
+
+```bash
+python scripts/run_gemini_eval.py
+```
+
+Paste the key only when the hidden prompt appears. The launcher keeps it in the current process environment, never in command arguments or a file. It runs all 16 authored cases at budget 5 with the same protocol and generation limits as the pilot, adds a 15-second minimum interval between HTTP attempt starts, and prints each completed episode to stderr. Allow approximately 20–35 minutes; interrupted or failed episodes remain recorded. A larger workload can still exceed account-specific token or daily limits. Pacing is not a quota guarantee.
+
+Results go to `runs/gemini-3-5-authored-budget5-v1`. To resume after interruption, without changing code or settings:
+
+```bash
+python scripts/run_gemini_eval.py --resume
+```
+
+Completed failures are skipped on resume, not retried. To share results:
+
+```bash
+tar -czf runs/gemini-3-5-authored-budget5-v1.tar.gz -C runs gemini-3-5-authored-budget5-v1
+```
+
+The general CLI options `--request-interval 15 --progress` work with other HTTP models too. Pacing covers retries and successive episodes within the same backend instance; separate processes do not share a limiter. It is recorded in the fingerprint and as `transport_wait` journal events. Episode latency includes pacing waits, so it cannot be directly compared with the unpaced pilot as inference latency. The default interval remains zero.
 
 ## Action and budget contract
 

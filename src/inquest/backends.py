@@ -71,6 +71,7 @@ class HTTPBackend:
                  api_key_env: str = "INQUEST_API_KEY", model_revision: str | None = None,
                  temperature: float | None = 0.0, max_output_tokens: int = 768,
                  token_limit_param: str = "max_completion_tokens",
+                 request_interval: float = 0.0,
                  timeout: float = 60.0, retries: int = 2, json_mode: bool = False):
         if provider not in ("ollama", "compatible") or not isinstance(model, str) or not model.strip():
             raise ValueError("Choose ollama or compatible and an explicit model name")
@@ -86,6 +87,8 @@ class HTTPBackend:
             raise ValueError("Retries must be an integer in [0, 5]")
         if type(timeout) not in (int, float) or not math.isfinite(timeout) or not 0 < timeout <= 600:
             raise ValueError("Timeout must be in (0, 600]")
+        if type(request_interval) not in (int, float) or not math.isfinite(request_interval) or not 0 <= request_interval <= 60:
+            raise ValueError("Request interval must be in [0, 60] seconds")
         self.provider, self.model = provider, model
         self.base_url = validate_endpoint(base_url)
         self.api_key_env = api_key_env
@@ -93,6 +96,8 @@ class HTTPBackend:
         self.model_revision = model_revision
         self.temperature, self.max_output_tokens = temperature, max_output_tokens
         self.token_limit_param = token_limit_param
+        self.request_interval = request_interval
+        self._last_request_at = None
         self.timeout, self.retries, self.json_mode = timeout, retries, json_mode
         self._digest = None
         self._opener = urllib.request.build_opener(_NoRedirect())
@@ -117,6 +122,7 @@ class HTTPBackend:
             "base_url": self.base_url, "api_key_env": self.api_key_env,
             "temperature": self.temperature, "max_output_tokens": self.max_output_tokens,
             "token_limit_param": self.token_limit_param,
+            "request_interval_seconds": self.request_interval,
             "timeout_seconds": self.timeout, "transport_retries": self.retries,
             "json_mode": self.json_mode,
         }
@@ -127,6 +133,12 @@ class HTTPBackend:
         if self._api_key:
             headers["Authorization"] = "Bearer " + self._api_key
         for attempt in range(1, self.retries + 2):
+            if self._last_request_at is not None and self.request_interval:
+                delay = max(0.0, self._last_request_at + self.request_interval - time.monotonic())
+                if delay:
+                    emit("transport_wait", {"reason": "request_interval", "seconds": delay})
+                    time.sleep(delay)
+            self._last_request_at = time.monotonic()
             emit("transport_attempt", {"attempt": attempt})
             try:
                 request = urllib.request.Request(self.base_url + path, data=body, headers=headers)

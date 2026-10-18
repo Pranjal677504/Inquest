@@ -253,11 +253,13 @@ def test_wilson_interval_includes_uncertainty_at_extremes():
 def test_cli_offline_run_summary_replay_and_resume(tmp_path, capsys):
     output = tmp_path / "cli-run"
     args = ["run", "--suite", str(SUITE), "--set", "holdout", "--backend", "heuristic",
-            "--budgets", "5", "--case-limit", "1", "--output", str(output), "--allow-dirty"]
+            "--budgets", "5", "--case-limit", "1", "--output", str(output), "--allow-dirty", "--progress"]
     assert main(args) == 0
-    assert json.loads(capsys.readouterr().out)["kind"] == "offline_heuristic_evaluation"
+    captured = capsys.readouterr()
+    assert json.loads(captured.out)["kind"] == "offline_heuristic_evaluation"
+    assert "case-0001-budget-005:" in captured.err
     assert main(args + ["--resume"]) == 0
-    capsys.readouterr()
+    assert capsys.readouterr().err == ""
     assert main(["replay", "--run-dir", str(output), "--job-id", "case-0001-budget-005"]) == 0
     replay = json.loads(capsys.readouterr().out)
     assert any(event["kind"] == "observation" for event in replay["events"])

@@ -351,7 +351,7 @@ def summarize(directory: str | Path):
 def run_experiment(*, suite: str | Path, set_name: str, backend: Backend,
                    budgets: tuple[int, ...], output: str | Path, case_limit: int | None = None,
                    episode_options: dict | None = None, resume: bool = False,
-                   allow_dirty: bool = False):
+                   allow_dirty: bool = False, progress=None):
     suite, output = Path(suite), Path(output)
     if not budgets or len(set(budgets)) != len(budgets) or any(type(b) is not int or b < 1 for b in budgets):
         raise RunError("Budgets must be distinct positive integers")
@@ -425,6 +425,8 @@ def run_experiment(*, suite: str | Path, set_name: str, backend: Backend,
                 finally:
                     journal.close()
                 atomic_json(output / "summary.json", summarize(output))
+                if progress is not None:
+                    progress(dict(job), deepcopy(result))
         except KeyboardInterrupt:
             atomic_json(output / "summary.json", summarize(output))
             raise
