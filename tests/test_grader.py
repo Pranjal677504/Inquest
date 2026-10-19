@@ -39,6 +39,7 @@ def test_correct_report_and_costs(episode):
     assert result["evidence"] == 1 and result["valid_citations"] == 1
     assert result["steps"] == 1 and result["obs_tokens"] == env.tokens_used()
     assert result["brier"] == pytest.approx(0.04)
+    assert result["evidence_relevant_success"]
     assert not hasattr(env, "sc")
 
 
@@ -153,6 +154,28 @@ def test_known_irrelevant_evidence_does_not_prove_support(episode):
     assert result["valid_citations"] == 2 and result["invalid_citations"] == 0
     # This milestone checks reference validity and accuracy, not entailment.
     assert result["report_valid"] and result["success"]
+    assert not result["evidence_relevant_success"]
+
+
+@pytest.mark.parametrize("changes", [
+    {"service": "gateway"}, {"evidence": ["o1", "o999"]}, {"confidence": None},
+])
+def test_relevant_citation_cannot_rescue_a_failed_report(episode, changes):
+    scenario, env = episode
+    result = grade(scenario, env, report_for(scenario, **changes))
+    assert result["relevant_citations"] == 1
+    assert not result["success"]
+    assert not result["evidence_relevant_success"]
+
+
+def test_one_relevant_citation_satisfies_the_explicit_relevance_gate(episode):
+    scenario, env = episode
+    env.call("list_services")
+    result = grade(scenario, env, report_for(scenario, evidence=["o1", "o2"]))
+    assert result["evidence"] == 0.5
+    assert result["success"] and result["evidence_relevant_success"]
+    # Confidence retains its existing accepted-success target.
+    assert result["brier"] == pytest.approx(0.04)
 
 
 def test_empty_log_results_are_not_relevant(episode):

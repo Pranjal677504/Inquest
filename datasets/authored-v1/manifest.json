@@ -1,0 +1,68 @@
+{
+  "suite_id": "inquest-authored-v1",
+  "format_version": 2,
+  "labels_included": true,
+  "freeze_date_utc": "2026-10-18",
+  "author": "Codex, prepared for Pranjal Prajapati",
+  "construction": "Case-specific authored keyframes and telemetry; no procedural incident generation, random sampling, or generator signal templates.",
+  "review_status": "Single-author causal and structural review; no independent human or domain-expert review.",
+  "provenance": {
+    "base_revision": "7054eedde6f697a5cb69ab879fa2b315de0a3018",
+    "source_hashes_are_authoritative": true,
+    "note": "Source hashes identify the construction code even when built from uncommitted changes.",
+    "source_sha256": {
+      "scripts/build_authored_v1.py": "f1667a81a69aaa4f6d6a62720cd8f6b41bcd46b3664589dffc681f316a2db1f5",
+      "src/inquest/scenario.py": "c1c37e6963b02db0681d96dfc898a175e3aae2175cfe2c6dbb2554c2c3bbe680",
+      "src/inquest/topology.py": "7082024c513a25f718e6610861beceb6af61407155840c01c49c48f7c792a9f5"
+    },
+    "authoring_sha256": "3288404a52faa047395d63a0f3358e157a65dfe271ecb1a2ddd1271d1f62a4a1"
+  },
+  "sets": {
+    "holdout": {
+      "file": "holdout.jsonl",
+      "split": "holdout",
+      "difficulty": "mixed",
+      "count": 16,
+      "bytes": 330749,
+      "sha256": "67af58ef06f6001f460f554e5897e8931adf249066d473b27163e8e9705ed6dc",
+      "scenario_ids": [
+        "authored-v1-001",
+        "authored-v1-002",
+        "authored-v1-003",
+        "authored-v1-004",
+        "authored-v1-005",
+        "authored-v1-006",
+        "authored-v1-007",
+        "authored-v1-008",
+        "authored-v1-009",
+        "authored-v1-010",
+        "authored-v1-011",
+        "authored-v1-012",
+        "authored-v1-013",
+        "authored-v1-014",
+        "authored-v1-015",
+        "authored-v1-016"
+      ],
+      "fault_counts": {
+        "bad_deploy": 2,
+        "bad_migration": 2,
+        "cert_expiry": 2,
+        "config_regression": 2,
+        "dependency_outage": 2,
+        "feature_flag": 2,
+        "resource_leak": 2,
+        "traffic_surge": 2
+      },
+      "difficulty_counts": {
+        "hard": 8,
+        "medium": 8
+      }
+    }
+  },
+  "limitations": [
+    "Public synthetic fixed-topology cases",
+    "Sparse logs and piecewise-linear metrics",
+    "AI-authored and single-author reviewed; no independent domain-expert review",
+    "No model fitting, prompt tuning, or agent results used during construction"
+  ]
+}

@@ -13,3 +13,4 @@ dist/
 runs/
 work/
 *.log
+experiments/gemini-authored-budget5-v1/run.tar.gz

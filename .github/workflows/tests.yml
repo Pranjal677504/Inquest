@@ -31,11 +31,47 @@ jobs:
       - name: Verify frozen bytes
         working-directory: datasets/smoke-v1
         run: sha256sum -c SHA256SUMS
+      - name: Verify authored bytes
+        working-directory: datasets/authored-v1
+        run: sha256sum -c SHA256SUMS
+      - name: Verify fresh authored bytes
+        working-directory: datasets/authored-v2
+        run: sha256sum -c SHA256SUMS
       - name: Run examples outside the checkout
         working-directory: ${{ runner.temp }}
         env:
           INQUEST_CHECKOUT: ${{ github.workspace }}
         run: |
-          for example in generate_incident load_frozen_set inspect_incident grade_report; do
+          for example in generate_incident load_frozen_set load_authored_set inspect_incident grade_report; do
             python "$INQUEST_CHECKOUT/examples/$example.py"
           done
+
+      - name: Verify installed wheel and console entrypoint outside checkout
+        env:
+          INQUEST_CHECKOUT: ${{ github.workspace }}
+          INQUEST_TEMP: ${{ runner.temp }}
+        run: |
+          python -m pip wheel --no-deps . --wheel-dir "$INQUEST_TEMP/inquest-wheel"
+          python -m venv "$INQUEST_TEMP/inquest-wheel-env"
+          "$INQUEST_TEMP/inquest-wheel-env/bin/python" -m pip install "$INQUEST_TEMP"/inquest-wheel/inquest-*.whl
+          cd "$INQUEST_TEMP"
+          "$INQUEST_TEMP/inquest-wheel-env/bin/inquest" run --suite "$INQUEST_CHECKOUT/datasets/authored-v1" --set holdout --backend heuristic --budgets 5 --case-limit 1 --output "$INQUEST_TEMP/inquest-wheel-run"
+          "$INQUEST_TEMP/inquest-wheel-env/bin/inquest" replay --run-dir "$INQUEST_TEMP/inquest-wheel-run" --job-id case-0001-budget-005 > "$INQUEST_TEMP/inquest-wheel-replay.json"
+
+  browser:
+    name: Chromium workbench
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Install browser test dependencies
+        run: python -m pip install -e ".[dev,browser]"
+      - name: Install Chromium headless shell
+        run: python -m playwright install --with-deps --only-shell chromium
+      - name: Run browser workflows against Flask
+        run: python -m pytest browser_tests -q

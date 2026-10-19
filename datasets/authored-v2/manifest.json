@@ -1,0 +1,85 @@
+{
+  "suite_id": "inquest-authored-v2",
+  "format_version": 2,
+  "labels_included": true,
+  "freeze_date_utc": "2026-10-19",
+  "author": "Codex, prepared for Pranjal Prajapati",
+  "construction": "Sixteen new case-specific authored mechanisms and keyframes. Shared baseline telemetry and renderer with authored-v1; no random sampling or procedural fault templates.",
+  "review_status": "Single-author causal and structural review; no independent human or domain-expert review. Designed after inspecting authored-v1 policy failures.",
+  "evaluation_contract": {
+    "policy": "v2",
+    "prompt_sha256": "6c94ffeaf6dbde3eeea84e5d5f1e1f34c24a0b9fd8284bfd13a28a8d9d8a411a",
+    "policy_source_revision": "91e1a0354b1cb562f121d44d91ffa7a2a75e5574",
+    "budget": 5,
+    "max_model_turns": 8,
+    "max_protocol_errors": 2,
+    "max_output_tokens": 2048,
+    "model": "gemini-3.5-flash-lite",
+    "temperature": null,
+    "json_mode": true,
+    "token_limit_param": "max_tokens"
+  },
+  "provenance": {
+    "source_hashes_are_authoritative": true,
+    "source_sha256": {
+      "scripts/build_authored_v2.py": "86d3b69e035b2821fc70f84c36ad81af1493275e7be0d67433a9e176763e3acd",
+      "scripts/build_authored_v1.py": "f1667a81a69aaa4f6d6a62720cd8f6b41bcd46b3664589dffc681f316a2db1f5",
+      "src/inquest/scenario.py": "b0ef6b4ee58ce288df78f6260ad056f420b3bd0b5e5f1c3f2b7a57e2ecea7592",
+      "src/inquest/topology.py": "7082024c513a25f718e6610861beceb6af61407155840c01c49c48f7c792a9f5",
+      "src/inquest/env.py": "233f4c0b794201142c6280f1e3edebb8ff40b2223200e12e2c3a42e4626e6096",
+      "src/inquest/grader.py": "d9b654f572f060ecfd2d364d8a452fffb3eeb9de258a08f2b37c36ef1e81c844",
+      "src/inquest/agent_protocol.py": "9fef2ab2529f6f4dbe043d27c0d5b361d9bfeeeb5dd32453ee92ef510ff0ae15"
+    },
+    "authoring_sha256": "e29ce6730842c1ea370ef5248a6fa87eab11828e75fadf1ee298a299bb23e0e5"
+  },
+  "sets": {
+    "holdout": {
+      "file": "holdout.jsonl",
+      "split": "holdout",
+      "difficulty": "mixed",
+      "count": 16,
+      "bytes": 323434,
+      "sha256": "8fc3619a6be0ad475f5af0605da2e781c4a6009e43eda8492ba6aa686bb3c44e",
+      "scenario_ids": [
+        "authored-v2-001",
+        "authored-v2-002",
+        "authored-v2-003",
+        "authored-v2-004",
+        "authored-v2-005",
+        "authored-v2-006",
+        "authored-v2-007",
+        "authored-v2-008",
+        "authored-v2-009",
+        "authored-v2-010",
+        "authored-v2-011",
+        "authored-v2-012",
+        "authored-v2-013",
+        "authored-v2-014",
+        "authored-v2-015",
+        "authored-v2-016"
+      ],
+      "fault_counts": {
+        "bad_deploy": 2,
+        "bad_migration": 2,
+        "cert_expiry": 2,
+        "config_regression": 2,
+        "dependency_outage": 2,
+        "feature_flag": 2,
+        "resource_leak": 2,
+        "traffic_surge": 2
+      },
+      "difficulty_counts": {
+        "hard": 8,
+        "medium": 8
+      }
+    }
+  },
+  "limitations": [
+    "Public synthetic fixed-topology cases; shared ontology and baseline telemetry with authored-v1",
+    "New mechanisms authored after inspecting v1 development results; not independent or secret holdout data",
+    "Same author prepared cases and policy; independent expert review remains pending",
+    "Frozen v2 prompt predates these cases; no live model calls, rejection sampling, or tuning on this suite",
+    "Scripted paths prove clue reachability and grading compatibility, not model performance or unique causality",
+    "Legacy coarse evidence metric unchanged; health is intentionally included where relevant in this new suite"
+  ]
+}

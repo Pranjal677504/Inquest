@@ -4,9 +4,11 @@
 
 [Try the workbench](https://inquestbench.vercel.app) · [Tool API](docs/TOOLS.md) · [Grading](docs/GRADING.md) · [Frozen data](datasets/README.md) · [Related work](docs/RELATED_WORK.md) · [Roadmap](docs/ROADMAP.md)
 
+[Project progress](docs/PROGRESS.md) consolidates completed capabilities, reviewed experiments, known limitations and the next product milestone.
+
 Investigate an incident across eight services: follow dependencies, inspect metrics and logs, compare recent changes, and submit a diagnosis. The browser demo works without an API key. The Python toolkit exposes the same incident data through budgeted tools and grades reports against evaluator-held labels.
 
-**Status:** incident construction, the browser workbench, frozen loading, budgeted tools, and report grading work today. Autonomous agents, a fitted reasoner, and end-to-end model experiments are not yet published. This is an early evaluation toolkit, not a validated production benchmark.
+**Status:** incident construction, the browser workbench, frozen loading, budgeted tools, and report grading work today. The recorded single-agent runner supports versioned policies, offline paired comparisons, and resumable model evaluations. V1/V2 prompts are preserved; [V3](docs/POLICY_V3.md) remains an experimental guidance candidate. V2 is the working evaluation baseline; the launcher default remains V1. A fitted reasoner remains future work. This is an early evaluation toolkit, not a validated production benchmark.
 
 ## What you can run
 
@@ -14,8 +16,9 @@ Investigate an incident across eight services: follow dependencies, inspect metr
 |---|---|---|
 | Browser workbench | Select a frozen or generated case; inspect telemetry; submit a diagnosis and reveal the answer | [App](app.py), [web tests](tests/test_web.py) |
 | Incident generator | Eight fault categories, one root cause, 120 minutes of telemetry, JSON serialization | [Generator](src/inquest/scenario.py), [example](examples/generate_incident.py) |
-| Frozen inputs | 120 saved cases in nine sets, provenance manifest and SHA-256 verification | [Data guide](datasets/README.md), [loader tests](tests/test_frozen.py) |
+| Frozen inputs | 120 smoke cases plus two separately versioned 16-case authored suites, provenance manifests and SHA-256 verification | [Data guide](datasets/README.md), [loader tests](tests/test_frozen.py) |
 | Investigation environment | Eight read-only tools, charged attempts, observation IDs and detached transcripts | [Tool contract](docs/TOOLS.md), [environment tests](tests/test_env.py) |
+| Agent runner | Strict JSON actions, Ollama/compatible adapters, offline heuristic, durable runs, resume, replay and per-budget summaries | [Runner guide](docs/RUNNER.md), [runner tests](tests/test_runner.py), [HTTP tests](tests/test_backends.py) |
 | Report grader | Service, fault and fix checks; malformed-report handling; citation validation; Brier loss | [Grading contract](docs/GRADING.md), [grader tests](tests/test_grader.py) |
 
 The investigation example uses five predetermined queries. The grading example uses two handcrafted reports. Neither is an autonomous-agent result or an accuracy claim.
@@ -40,14 +43,26 @@ For the Python examples and tests:
 ```bash
 python examples/generate_incident.py
 python examples/load_frozen_set.py
+python examples/load_authored_set.py
 python examples/inspect_incident.py
 python examples/grade_report.py
 python -m pytest -q
 ```
 
-**Dependencies:** the generator, loader, tools, and grader use the Python standard library. Installing the distribution also installs **Flask**, which runs the bundled web application. Tests use pytest. The current features require no model, provider key, or database. Future hosted-model experiments would need credentials; local-model experiments would need a model server and suitable compute.
+For Chromium workflow checks and their separate optional dependencies, see [Testing](docs/TESTING.md). These cover case switching, diagnosis, request failures, and keyboard navigation through the real Flask API.
 
-**Python support:** Python **3.10–3.14** passed installation, all **243 tests**, all four examples, and ten frozen checksum checks on Linux in [this verified CI run](https://github.com/Pranjal677504/Inquest/actions/runs/37794556651). Local verification is on Python 3.14. Package metadata targets 3.10+; newer versions and Windows execution are not covered by that result. [CI](https://github.com/Pranjal677504/Inquest/actions/workflows/tests.yml) checks each pull request and `main` update. The hosted demo selects Python 3.14 in [`.python-version`](.python-version).
+**Dependencies:** the generator, loader, tools, and grader use the Python standard library. Installing the distribution also installs **Flask**, which runs the bundled web application. Tests use pytest. The browser and offline heuristic require no model, provider key, or database. Hosted model runs need a configured provider; local model runs need a model server and suitable compute.
+
+**Python support:** Python **3.10–3.14** passed installation, all **243 tests**, all four examples, and ten frozen checksum checks on Linux in [this verified CI run](https://github.com/Pranjal677504/Inquest/actions/runs/37794556651). That run covers the earlier smoke-only implementation. The runner update passed **371 Python tests and six browser workflow tests locally on Linux/Python 3.12.14**; its hosted CI result is pending publication. Package metadata targets 3.10+; newer versions and Windows execution are not covered by that result. [CI](https://github.com/Pranjal677504/Inquest/actions/workflows/tests.yml) checks each pull request and `main` update. The hosted demo selects Python 3.14 in [`.python-version`](.python-version).
+
+## Run a recorded investigation
+
+```bash
+python -m inquest run --suite datasets/authored-v1 --set holdout \
+  --backend heuristic --budgets 5,10,20 --output runs/authored-baseline
+```
+
+This is a **non-LLM baseline**, not a model accuracy result. For Ollama, hosted-compatible endpoints, interruption/resume, and saved-run inspection, see the [Runner guide](docs/RUNNER.md). Actual model runs require a configured backend. The [recorded offline baseline](experiments/offline-baseline-v1/README.md) contains 96 episodes with complete traces and failure analysis; it is not an LLM experiment.
 
 ## A budgeted investigation
 
@@ -67,7 +82,7 @@ print("Steps remaining:", env.steps_left)
 
 Available tools: `list_services`, `get_alerts`, `query_metric`, `search_logs`, `get_events`, `get_event`, `health_check`, and `get_trace`. Every attempted call consumes a step, including invalid requests. See [arguments, limits, and observation behavior](docs/TOOLS.md).
 
-Reports name a service, fault type, fix action and target, observation IDs, and confidence. The [grader](docs/GRADING.md) separates diagnosis correctness from report validity. It rejects malformed confidence and invalid references rather than silently repairing them. Evidence relevance currently checks tool/service matches; it does **not** establish that the cited text supports a claim.
+Reports name a service, fault type, fix action and target, observation IDs, and confidence. The additive `evidence_relevant_success` metric requires accepted success plus at least one citation matching the coarse gold tool/service labels. The [grader](docs/GRADING.md) separates diagnosis correctness from report validity. It rejects malformed confidence and invalid references rather than silently repairing them. Evidence relevance currently checks tool/service matches; it does **not** establish that the cited text supports a claim.
 
 ```mermaid
 flowchart LR
@@ -89,7 +104,9 @@ The browser is an unrestricted educational interface with answer reveal. Scored 
 - The `ood` split changes signal-log wording, not topology or failure mechanisms. It is not evidence of production generalization.
 - The small public smoke suite is for interface checks, not sufficient likelihood training or strong performance claims.
 - Gold tool/service relevance and fix action/target matches are coarse measures. Confidence scoring is implemented; calibration has not been demonstrated.
-- No independent authored holdouts, fitted likelihood artifacts, or real-model result table are published yet.
+- [`inquest-authored-v1`](datasets/authored-v1/README.md) adds 16 separately constructed causal cases with explicit definitions, distractors, missing logs, and evaluator explanations. They are AI-authored and self-reviewed; independent domain-expert review remains pending. Access them through the Python loader and example.
+- [`inquest-authored-v2`](datasets/authored-v2/README.md) adds 16 fresh mechanisms for the already-frozen V2 prompt, with five-call support/counterevidence paths and separate launcher outputs. The same author inspected earlier development results; this is not an independent or secret holdout. Report this suite separately.
+- No fitted likelihood artifacts are published. The recorded offline heuristic is explicitly separate from model performance.
 
 ## Research direction and related work
 
@@ -97,7 +114,7 @@ Replayability is established practice in incident benchmarks. [Cloud-OpsBench, O
 
 Inquest's proposed experiments ask whether **information-gain probe selection**, **confidence calibration**, and **success under equal investigation budgets** improve over simpler policies. Those are questions to test, not demonstrated advantages or claims of novelty. The [design notes](docs/DESIGN.md) explain the proposed belief model and its assumptions.
 
-Next priorities are independently authored cases and an actual local-model pilot with saved transcripts, failures, and usage. These precede convenience CLI work; the full structured-agent comparison still depends on implementing and validating the reasoner. [Acceptance criteria and prerequisites](docs/ROADMAP.md) define what must exist before results can be claimed.
+Next priorities are a browser investigation viewer, connection to local execution, and transparent evidence/error/comparison displays. Independent case review and separate assessment data remain necessary for generalization claims. Both authored suites informed V3. The full structured-agent comparison still depends on implementing and validating the reasoner. [Acceptance criteria and prerequisites](docs/ROADMAP.md) define what must exist before results can be claimed.
 
 ## Repository guide
 

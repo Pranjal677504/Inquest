@@ -92,6 +92,38 @@ def test_truncated_metrics_and_invalid_trace_timestamp():
         Scenario.from_json(json.dumps(payload))
 
 
+@pytest.mark.parametrize("field", ["status", "version", "restarts_1h", "cert_days_left"])
+def test_health_requires_every_observation_field(field):
+    payload = json.loads(generate(7).to_json())
+    del payload["health"]["postgres"][field]
+    with pytest.raises(ValueError, match="Health for postgres is missing required fields"):
+        Scenario.from_json(json.dumps(payload))
+
+
+@pytest.mark.parametrize("field,value", [
+    ("status", "unknown"), ("status", []), ("version", None), ("version", "  "),
+    ("restarts_1h", -1), ("restarts_1h", True), ("restarts_1h", 1.5),
+    ("cert_days_left", True), ("cert_days_left", "20"), ("cert_days_left", 0.5),
+])
+def test_invalid_health_is_rejected_before_environment_construction(field, value):
+    payload = json.loads(generate(7).to_json())
+    payload["health"]["postgres"][field] = value
+    with pytest.raises(ValueError, match="[Hh]ealth"):
+        Scenario.from_json(json.dumps(payload))
+
+
+@pytest.mark.parametrize("days", [-3, 0, 20])
+def test_health_allows_expired_certificates_and_extra_metadata(days):
+    from inquest.env import InvestigationEnv
+
+    payload = json.loads(generate(7).to_json())
+    payload["health"]["postgres"].update(cert_days_left=days, evaluator_note="private")
+    scenario = Scenario.from_json(json.dumps(payload))
+    observation = InvestigationEnv(scenario).call("health_check", service="postgres")
+    assert observation.data["cert_days_left"] == days
+    assert "evaluator_note" not in observation.data
+
+
 def test_migration_causes_lock_contention_and_caller_errors():
     scenario = generate(7, "easy")
     assert scenario.root_service == "postgres"

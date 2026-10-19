@@ -1,0 +1,901 @@
+{
+  "suite_id": "inquest-authored-v2",
+  "format_version": 1,
+  "author": "Codex, prepared for Pranjal Prajapati",
+  "review_status": "Single-author causal and structural review; no independent human or domain-expert review. Designed after inspecting authored-v1 policy failures.",
+  "cases": [
+    {
+      "id": "authored-v2-001",
+      "title": "Auth release reads the wrong signing-key slot",
+      "fault_type": "bad_deploy",
+      "root_service": "auth",
+      "fix": {
+        "action": "rollback",
+        "target": "auth"
+      },
+      "difficulty": "medium",
+      "onset": 55,
+      "narrative": "Auth a204 changes the signing-key slot from active to retired at minute 55. All instances reject otherwise valid sessions immediately after activation. Cache lookups still succeed and traffic is flat. Roll back auth; the cache flag changed later is unrelated.",
+      "distractors": [
+        "A cache diagnostics flag at minute 57 changes tracing only, after the first rejected session."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "get_alerts",
+          "args": {},
+          "contains": "now = t=119",
+          "role": "discovery"
+        },
+        {
+          "tool": "get_events",
+          "args": {},
+          "contains": "e1",
+          "role": "discovery"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "auth"
+          },
+          "contains": "same token accepted on a203",
+          "role": "support"
+        },
+        {
+          "tool": "query_metric",
+          "args": {
+            "service": "auth",
+            "metric": "error_rate"
+          },
+          "contains": "recent(last 10m)=24.00",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "cache"
+          },
+          "contains": "hit rate unchanged",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v2-002",
+      "title": "Order release overflows a cents conversion",
+      "fault_type": "bad_deploy",
+      "root_service": "orders",
+      "fix": {
+        "action": "rollback",
+        "target": "orders"
+      },
+      "difficulty": "hard",
+      "onset": 73,
+      "narrative": "Orders o307 narrows a 64-bit cents accumulator to 16 bits. Large baskets fail while the same database operations continue to succeed. Orders logs are absent; gateway error payloads identify the conversion and the release. Roll back orders, rather than fail over postgres.",
+      "distractors": [
+        "A postgres maintenance notice at minute 71 reports successful replication with no serving interruption."
+      ],
+      "missing_logs": [
+        "orders"
+      ],
+      "probes": [
+        {
+          "tool": "get_alerts",
+          "args": {},
+          "contains": "now = t=119",
+          "role": "discovery"
+        },
+        {
+          "tool": "get_events",
+          "args": {},
+          "contains": "e1",
+          "role": "discovery"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "gateway"
+          },
+          "contains": "cents accumulator overflow",
+          "role": "support"
+        },
+        {
+          "tool": "get_trace",
+          "args": {},
+          "contains": "orders o307",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "postgres"
+          },
+          "contains": "accepts reads and commits",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v2-003",
+      "title": "Order pool reduced while database remains idle",
+      "fault_type": "config_regression",
+      "root_service": "orders",
+      "fix": {
+        "action": "revert_config",
+        "target": "orders"
+      },
+      "difficulty": "medium",
+      "onset": 62,
+      "narrative": "A live orders configuration reduces pool capacity from 48 to 2 at minute 62. Requests queue locally while postgres has spare connections and normal latency. A prior receipt-only deploy did not change the pool. Revert orders configuration.",
+      "distractors": [
+        "Orders o218 shipped receipt formatting six minutes earlier and passed the original 48-slot pool check."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "get_alerts",
+          "args": {},
+          "contains": "now = t=119",
+          "role": "discovery"
+        },
+        {
+          "tool": "get_events",
+          "args": {},
+          "contains": "e1",
+          "role": "discovery"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "orders"
+          },
+          "contains": "max_clients 48 -> 2",
+          "role": "support"
+        },
+        {
+          "tool": "query_metric",
+          "args": {
+            "service": "orders",
+            "metric": "latency_p99"
+          },
+          "contains": "ratio=20.00",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "postgres"
+          },
+          "contains": "32 of 200",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v2-004",
+      "title": "Payment deadline drops below normal commit time",
+      "fault_type": "config_regression",
+      "root_service": "payments",
+      "fix": {
+        "action": "revert_config",
+        "target": "payments"
+      },
+      "difficulty": "hard",
+      "onset": 84,
+      "narrative": "A payments runtime timeout refresh changes database deadline from 800ms to 8ms. Normal commits take 24ms and the listener remains healthy. A nearby postgres index maintenance event finishes before symptoms. Revert payments timeout configuration, not the database.",
+      "distractors": [
+        "Postgres index statistics refresh ended at minute 80 and neither holds locks nor slows commits."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "get_alerts",
+          "args": {},
+          "contains": "now = t=119",
+          "role": "discovery"
+        },
+        {
+          "tool": "get_events",
+          "args": {},
+          "contains": "e1",
+          "role": "discovery"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "payments"
+          },
+          "contains": "ledger_commit_ms=8",
+          "role": "support"
+        },
+        {
+          "tool": "query_metric",
+          "args": {
+            "service": "postgres",
+            "metric": "latency_p99"
+          },
+          "contains": "ratio=1.00",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "postgres"
+          },
+          "contains": "no rejected connections",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v2-005",
+      "title": "Auth audit buffers accumulate under constant load",
+      "fault_type": "resource_leak",
+      "root_service": "auth",
+      "fix": {
+        "action": "rollback",
+        "target": "auth"
+      },
+      "difficulty": "medium",
+      "onset": 48,
+      "narrative": "Auth a91 retains every completed audit buffer after a minute-48 release. Memory rises for an hour at stable request volume before restarts. Cache reads remain fast. Roll back the leaking auth build; increasing replicas would not repair per-request retention.",
+      "distractors": [
+        "An unrelated cache maintenance flag toggles at minute 92, long after auth memory begins growing."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "get_alerts",
+          "args": {},
+          "contains": "now = t=119",
+          "role": "discovery"
+        },
+        {
+          "tool": "get_events",
+          "args": {},
+          "contains": "e1",
+          "role": "discovery"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "auth"
+          },
+          "contains": "completed buffers never removed",
+          "role": "support"
+        },
+        {
+          "tool": "query_metric",
+          "args": {
+            "service": "auth",
+            "metric": "memory"
+          },
+          "contains": "recent(last 10m)=98.00",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "cache"
+          },
+          "contains": "no evictions",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v2-006",
+      "title": "Search leaves temporary result handles open",
+      "fault_type": "resource_leak",
+      "root_service": "search",
+      "fix": {
+        "action": "rollback",
+        "target": "search"
+      },
+      "difficulty": "hard",
+      "onset": 52,
+      "narrative": "Search s118 leaks a temporary result handle for each query after minute 52. Demand and CPU remain flat, but after handle exhaustion new queries fail. Root logs are absent; gateway receives an explicit descriptor-exhaustion response. Roll back search.",
+      "distractors": [
+        "Gateway connection logging changes at minute 97, after handle exhaustion starts, without changing routing."
+      ],
+      "missing_logs": [
+        "search"
+      ],
+      "probes": [
+        {
+          "tool": "get_alerts",
+          "args": {},
+          "contains": "now = t=119",
+          "role": "discovery"
+        },
+        {
+          "tool": "get_events",
+          "args": {},
+          "contains": "e1",
+          "role": "discovery"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "gateway"
+          },
+          "contains": "closed_since_boot=0",
+          "role": "support"
+        },
+        {
+          "tool": "query_metric",
+          "args": {
+            "service": "search",
+            "metric": "rps"
+          },
+          "contains": "ratio=1.00",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "gateway"
+          },
+          "contains": "socket count stable",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v2-007",
+      "title": "Payments listener reaches certificate expiry",
+      "fault_type": "cert_expiry",
+      "root_service": "payments",
+      "fix": {
+        "action": "renew_cert",
+        "target": "payments"
+      },
+      "difficulty": "medium",
+      "onset": 66,
+      "narrative": "Payments keeps healthy application workers but its serving certificate expires at minute 66. Orders sees certificate validity errors before HTTP dispatch; the payments deploy at minute 60 still passed TLS at minute 61. Renew the payments certificate.",
+      "distractors": [
+        "A payments receipt-text release precedes expiry, but the same binary served successfully while the certificate was valid."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "get_alerts",
+          "args": {},
+          "contains": "now = t=119",
+          "role": "discovery"
+        },
+        {
+          "tool": "get_events",
+          "args": {},
+          "contains": "e1",
+          "role": "discovery"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "orders"
+          },
+          "contains": "notAfter minute 66",
+          "role": "support"
+        },
+        {
+          "tool": "health_check",
+          "args": {
+            "service": "payments"
+          },
+          "contains": "tls_cert_days_left=-1",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "payments"
+          },
+          "contains": "handshake and ledger acceptance passed",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v2-008",
+      "title": "Auth TLS expires after an unrelated route refresh",
+      "fault_type": "cert_expiry",
+      "root_service": "auth",
+      "fix": {
+        "action": "renew_cert",
+        "target": "auth"
+      },
+      "difficulty": "hard",
+      "onset": 91,
+      "narrative": "Auth application error metrics stay flat because the TLS listener rejects sessions before dispatch. Its certificate expires at minute 91. Gateway route reload at minute 87 preserves the auth endpoint. Renew auth TLS instead of reverting gateway routing.",
+      "distractors": [
+        "The newest gateway route event keeps both the auth upstream address and trust store unchanged."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "get_alerts",
+          "args": {},
+          "contains": "now = t=119",
+          "role": "discovery"
+        },
+        {
+          "tool": "get_events",
+          "args": {},
+          "contains": "e1",
+          "role": "discovery"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "gateway"
+          },
+          "contains": "validity ended minute 91",
+          "role": "support"
+        },
+        {
+          "tool": "health_check",
+          "args": {
+            "service": "auth"
+          },
+          "contains": "tls_cert_days_left=-2",
+          "role": "support"
+        },
+        {
+          "tool": "get_event",
+          "args": {
+            "event_id": "e1"
+          },
+          "contains": "Auth endpoint and CA trust bundle unchanged",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v2-009",
+      "title": "Checkout replay multiplies orders arrivals",
+      "fault_type": "traffic_surge",
+      "root_service": "orders",
+      "fix": {
+        "action": "scale_up",
+        "target": "orders"
+      },
+      "difficulty": "medium",
+      "onset": 58,
+      "narrative": "A client reconnect bug replays checkout requests, lifting orders arrivals from 160 to 1920 per second at minute 58. CPU saturates and queueing follows. The orders binary and per-request work are unchanged; payments latency remains normal. Scale orders for the surge.",
+      "distractors": [
+        "Payments p43 deploys at minute 55 but remains responsive; it cannot explain upstream orders queue saturation."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "get_alerts",
+          "args": {},
+          "contains": "now = t=119",
+          "role": "discovery"
+        },
+        {
+          "tool": "get_events",
+          "args": {},
+          "contains": "e1",
+          "role": "discovery"
+        },
+        {
+          "tool": "query_metric",
+          "args": {
+            "service": "orders",
+            "metric": "rps"
+          },
+          "contains": "ratio=12.00",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "orders"
+          },
+          "contains": "1760 extra checkouts/s",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "payments"
+          },
+          "contains": "complete in 90ms",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v2-010",
+      "title": "Partner fan-out increases search arrivals",
+      "fault_type": "traffic_surge",
+      "root_service": "search",
+      "fix": {
+        "action": "scale_up",
+        "target": "search"
+      },
+      "difficulty": "hard",
+      "onset": 77,
+      "narrative": "A partner dashboard starts issuing twelve search requests for each refresh, raising total search RPS from 140 to 1680 at minute 77. Search logs are missing. Gateway access counts identify new demand; a search deploy at minute 69 served baseline load successfully. Scale search.",
+      "distractors": [
+        "Search s73 shipped before the surge and passed steady-load probes; its payload cost stayed unchanged."
+      ],
+      "missing_logs": [
+        "search"
+      ],
+      "probes": [
+        {
+          "tool": "get_alerts",
+          "args": {},
+          "contains": "now = t=119",
+          "role": "discovery"
+        },
+        {
+          "tool": "get_events",
+          "args": {},
+          "contains": "e1",
+          "role": "discovery"
+        },
+        {
+          "tool": "query_metric",
+          "args": {
+            "service": "search",
+            "metric": "rps"
+          },
+          "contains": "ratio=12.00",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "gateway"
+          },
+          "contains": "twelve search requests",
+          "role": "support"
+        },
+        {
+          "tool": "get_event",
+          "args": {
+            "event_id": "e1"
+          },
+          "contains": "query plan unchanged",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v2-011",
+      "title": "Ledger column rename breaks unchanged payment queries",
+      "fault_type": "bad_migration",
+      "root_service": "postgres",
+      "fix": {
+        "action": "rollback_migration",
+        "target": "postgres"
+      },
+      "difficulty": "medium",
+      "onset": 63,
+      "narrative": "A postgres migration renames amount_cents to amount_minor at minute 63 without a compatibility view. The unchanged payments binary still queries amount_cents. Database connections and other tables remain healthy. Roll back the migration, not payments.",
+      "distractors": [
+        "Payments p61 deploys formatting only after the database rename; its SQL fingerprint is unchanged from p60."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "get_alerts",
+          "args": {},
+          "contains": "now = t=119",
+          "role": "discovery"
+        },
+        {
+          "tool": "get_events",
+          "args": {},
+          "contains": "e1",
+          "role": "discovery"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "postgres"
+          },
+          "contains": "column ledger.amount_cents does not exist",
+          "role": "support"
+        },
+        {
+          "tool": "query_metric",
+          "args": {
+            "service": "postgres",
+            "metric": "conn_used"
+          },
+          "contains": "ratio=1.00",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "payments"
+          },
+          "contains": "identical ledger SELECT",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v2-012",
+      "title": "Quantity type narrowing rejects valid large stock values",
+      "fault_type": "bad_migration",
+      "root_service": "postgres",
+      "fix": {
+        "action": "rollback_migration",
+        "target": "postgres"
+      },
+      "difficulty": "hard",
+      "onset": 82,
+      "narrative": "Postgres migration m311 narrows stock quantities to a signed small integer. Previously valid quantities above 32767 fail, while small updates and connections remain healthy. Inventory flag changes only formatting. Roll back the database type migration.",
+      "distractors": [
+        "Inventory output flag changes one minute later but no longer runs when the database rejects a write."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "get_alerts",
+          "args": {},
+          "contains": "now = t=119",
+          "role": "discovery"
+        },
+        {
+          "tool": "get_events",
+          "args": {},
+          "contains": "e1",
+          "role": "discovery"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "postgres"
+          },
+          "contains": "quantity 120 write succeeds",
+          "role": "support"
+        },
+        {
+          "tool": "get_trace",
+          "args": {},
+          "contains": "smallint out of range",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "inventory"
+          },
+          "contains": "never reaches formatting",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v2-013",
+      "title": "Cache process stops while postgres remains available",
+      "fault_type": "dependency_outage",
+      "root_service": "cache",
+      "fix": {
+        "action": "failover",
+        "target": "cache"
+      },
+      "difficulty": "medium",
+      "onset": 71,
+      "narrative": "The cache process stops at minute 71 and its listener refuses connections. Auth, inventory and search fail one minute later while database operations continue normally. A search configuration change occurs after the outage. Fail over cache.",
+      "distractors": [
+        "Search increases result limits at minute 73, after independent cache callers already fail."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "get_alerts",
+          "args": {},
+          "contains": "now = t=119",
+          "role": "discovery"
+        },
+        {
+          "tool": "get_events",
+          "args": {},
+          "contains": "e1",
+          "role": "discovery"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "cache"
+          },
+          "contains": "listener 6379 closed",
+          "role": "support"
+        },
+        {
+          "tool": "health_check",
+          "args": {
+            "service": "cache"
+          },
+          "contains": "status=down",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "inventory"
+          },
+          "contains": "postgres stock lookup completes",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v2-014",
+      "title": "Database public listener loses its serving socket",
+      "fault_type": "dependency_outage",
+      "root_service": "postgres",
+      "fix": {
+        "action": "failover",
+        "target": "postgres"
+      },
+      "difficulty": "hard",
+      "onset": 94,
+      "narrative": "Postgres maintenance agent closes the public serving socket at minute 94 while its local admin process remains healthy. Orders and payments see TCP refusal before SQL. A payments rollout had succeeded beforehand; migration locks cannot explain failures before connection establishment. Fail over postgres.",
+      "distractors": [
+        "Payments p83 deploys at minute 89; a pre-outage acceptance check confirms successful commits."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "get_alerts",
+          "args": {},
+          "contains": "now = t=119",
+          "role": "discovery"
+        },
+        {
+          "tool": "get_events",
+          "args": {},
+          "contains": "e1",
+          "role": "discovery"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "orders"
+          },
+          "contains": "ECONNREFUSED before SQL dispatch",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "postgres"
+          },
+          "contains": "admin unix socket still responds",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "payments"
+          },
+          "contains": "acceptance: commit acknowledged",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v2-015",
+      "title": "Search explanation flag adds synchronous model work",
+      "fault_type": "feature_flag",
+      "root_service": "search",
+      "fix": {
+        "action": "disable_flag",
+        "target": "search"
+      },
+      "difficulty": "medium",
+      "onset": 68,
+      "narrative": "Search s205 ships an optional explanation path disabled at minute 60. A flag turns it on at minute 68; every result waits on CPU-heavy explanation work. Traffic remains flat and cache responds normally. Disable search explanations instead of rolling back the earlier code.",
+      "distractors": [
+        "The search release passes a dark-path canary eight minutes before the flag activation."
+      ],
+      "missing_logs": [],
+      "probes": [
+        {
+          "tool": "get_alerts",
+          "args": {},
+          "contains": "now = t=119",
+          "role": "discovery"
+        },
+        {
+          "tool": "get_events",
+          "args": {},
+          "contains": "e1",
+          "role": "discovery"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "search"
+          },
+          "contains": "explanations_enabled=true",
+          "role": "support"
+        },
+        {
+          "tool": "query_metric",
+          "args": {
+            "service": "search",
+            "metric": "rps"
+          },
+          "contains": "ratio=1.00",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "search"
+          },
+          "contains": "dark-path check",
+          "role": "counterevidence"
+        }
+      ]
+    },
+    {
+      "id": "authored-v2-016",
+      "title": "Orders audit mirror becomes a blocking response gate",
+      "fault_type": "feature_flag",
+      "root_service": "orders",
+      "fix": {
+        "action": "disable_flag",
+        "target": "orders"
+      },
+      "difficulty": "hard",
+      "onset": 86,
+      "narrative": "Orders o402 already contains a nonblocking audit mirror. A minute-86 flag changes the mirror into a synchronous response gate. Orders logs are missing; gateway sees the named flag and traces isolate the wait to orders after healthy payments and postgres spans. Disable the orders flag.",
+      "distractors": [
+        "Payments p121 updates receipt wording at minute 84 but payments calls continue to finish in 90ms."
+      ],
+      "missing_logs": [
+        "orders"
+      ],
+      "probes": [
+        {
+          "tool": "get_alerts",
+          "args": {},
+          "contains": "now = t=119",
+          "role": "discovery"
+        },
+        {
+          "tool": "get_events",
+          "args": {},
+          "contains": "e1",
+          "role": "discovery"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "gateway"
+          },
+          "contains": "audit_mirror_blocking=true",
+          "role": "support"
+        },
+        {
+          "tool": "get_trace",
+          "args": {
+            "status": "timeout"
+          },
+          "contains": "audit mirror acknowledgement",
+          "role": "support"
+        },
+        {
+          "tool": "search_logs",
+          "args": {
+            "service": "payments"
+          },
+          "contains": "no audit-mirror wait",
+          "role": "counterevidence"
+        }
+      ]
+    }
+  ]
+}

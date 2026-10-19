@@ -1,0 +1,92 @@
+{
+  "completed_episodes": 16,
+  "fingerprint": "33b45f62b11ccdb74b4727bc673cc00089e67f86a89881b77ab933cb7105bbcd",
+  "format_version": 1,
+  "groups": {
+    "budget_5/all": {
+      "brier_available": 16,
+      "brier_missing": 0,
+      "completed": 16,
+      "evidence_relevant_success_rate": 0.625,
+      "evidence_relevant_successes": 10,
+      "invalid_reports": 0,
+      "mean_brier_available": 0.25156875,
+      "mean_latency_seconds": 85.38429954168532,
+      "mean_steps": 4.1875,
+      "planned": 16,
+      "status_counts": {
+        "reported": 16
+      },
+      "success_rate": 0.625,
+      "success_wilson_95": [
+        0.38641040545502714,
+        0.8151876744113636
+      ],
+      "successes": 10,
+      "unfinished": 0
+    },
+    "budget_5/hard": {
+      "brier_available": 8,
+      "brier_missing": 0,
+      "completed": 8,
+      "evidence_relevant_success_rate": 0.375,
+      "evidence_relevant_successes": 3,
+      "invalid_reports": 0,
+      "mean_brier_available": 0.40125,
+      "mean_latency_seconds": 86.20737275011925,
+      "mean_steps": 4.25,
+      "planned": 8,
+      "status_counts": {
+        "reported": 8
+      },
+      "success_rate": 0.375,
+      "success_wilson_95": [
+        0.13684428582359742,
+        0.6942576053973727
+      ],
+      "successes": 3,
+      "unfinished": 0
+    },
+    "budget_5/medium": {
+      "brier_available": 8,
+      "brier_missing": 0,
+      "completed": 8,
+      "evidence_relevant_success_rate": 0.875,
+      "evidence_relevant_successes": 7,
+      "invalid_reports": 0,
+      "mean_brier_available": 0.1018875,
+      "mean_latency_seconds": 84.5612263332514,
+      "mean_steps": 4.125,
+      "planned": 8,
+      "status_counts": {
+        "reported": 8
+      },
+      "success_rate": 0.875,
+      "success_wilson_95": [
+        0.5291118177871464,
+        0.9775825085499433
+      ],
+      "successes": 7,
+      "unfinished": 0
+    }
+  },
+  "kind": "model_evaluation",
+  "limitations": [
+    "Public synthetic cases; fixed topology; coarse evidence relevance",
+    "Wilson intervals describe these case proportions, not production generalization",
+    "Known token totals exclude missing usage and may omit billing from failed requests",
+    "Brier means use available confidence values; missingness is reported"
+  ],
+  "planned_episodes": 16,
+  "prior_attempts_preserved": 0,
+  "unreadable_journal_lines": 0,
+  "usage_all_attempts": {
+    "input_tokens_known": 104939,
+    "input_usage_missing_calls": 0,
+    "model_replies": 92,
+    "model_requests": 92,
+    "output_tokens_known": 2477,
+    "output_usage_missing_calls": 0,
+    "transport_attempts": 92
+  }
+}

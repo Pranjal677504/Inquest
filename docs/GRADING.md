@@ -67,6 +67,7 @@ An absent or empty evidence list is invalid. Unknown, malformed, and failed-call
 | `fix_ok` | Both action and target match the labeled fix |
 | `diagnosis_ok` | All three accuracy checks pass, independently of report validity |
 | `success` | `report_valid` and `diagnosis_ok` are both true |
+| `evidence_relevant_success` | `success` is true and at least one cited observation has coarse gold tool/service relevance |
 | `confidence` | Original valid number, otherwise `null` |
 | `brier` | `(confidence - success)^2`, otherwise `null` for invalid confidence |
 | `evidence` | Fraction of counted citations with coarse gold tool/service relevance |
@@ -99,7 +100,7 @@ Credit requires a successful observation, its tool class in `scenario.gold_tools
 
 Empty records, failed observations, and invalid IDs receive zero credit. Invalid IDs remain in the denominator rather than being silently discarded. Unscoped event queries use the records actually returned, which can include a gold service. A benign record about the right service can still receive credit: this heuristic does not inspect whether text supports a specific claim.
 
-**Reference validity and relevance are separate.** A correct diagnosis citing existing but irrelevant observations can still have `success = true` and `evidence = 0`. The later evidence-support milestone will assess claims or cited lines. Fix grading checks action and target only; it does not verify rollback versions, configuration keys, recovery effectiveness, or safety of an operational intervention.
+**Reference validity and relevance are separate.** A correct diagnosis citing existing but irrelevant observations can still have `success = true` and `evidence = 0`. `evidence_relevant_success` is false in that case. It requires at least one relevant citation, while leaving `success`, report validity, and the Brier target unchanged. One relevant citation alongside valid irrelevant citations is sufficient; this is not an all-citations requirement or proof of reasoning. A benign record about the right service may still satisfy it. The later evidence-support milestone will assess claims or cited lines. Fix grading checks action and target only; it does not verify rollback versions, configuration keys, recovery effectiveness, or safety of an operational intervention.
 
 ## Provenance and verification
 

@@ -2,6 +2,14 @@
 
 The files in [`smoke-v1/`](smoke-v1/manifest.json) are the canonical inputs for initial development and evaluation. Load these files rather than regenerating cases from seeds: generator output is not guaranteed to remain identical across Python versions or generator revisions.
 
+## Authored causal suite: `inquest-authored-v1`
+
+[`authored-v1/`](authored-v1/README.md) adds 16 AI-authored incidents constructed separately from the procedural generator: two per fault category, with medium/hard designs, distractors, and four cases with missing root-service logs. Load with `load_frozen_set("datasets/authored-v1", "holdout")` or run `python examples/load_authored_set.py`. Canonical definitions, data, casebook, and manifest are checksummed. Independent domain-expert review is pending; no agent results or production validity are claimed.
+
+## Fresh authored suite: `inquest-authored-v2`
+
+[`authored-v2/`](authored-v2/README.md) adds sixteen new mechanisms and distractor combinations, balanced across the same eight fault categories and medium/hard designs. Every case has a reviewed five-call path; four omit root-service logs. The v2 policy prompt was frozen before construction and is unchanged. Load with `load_frozen_set("datasets/authored-v2", "holdout")`. The cases are public and single-author reviewed, with the same author having inspected earlier development results; they are not independent or secret holdout data. Report their results separately from authored-v1. No model results are included for this new suite.
+
 ## Suite: `inquest-smoke-v1`
 
 120 synthetic incidents, approximately 10 MB of uncompressed JSONL. Every case includes eight services and 120 minutes of metrics, with logs, change events, health, sampled traces, and construction labels. Each line is one complete incident bundle.
@@ -62,4 +70,4 @@ Checksums detect changed bytes; they are not signatures. Pin the repository comm
 
 Published suite files and their manifest are immutable evaluation inputs. Changes to incident contents, construction rules, or case selection require a new suite directory and version. Experiment records should include suite ID, set name, data-file SHA-256, and repository revision. Seeds document provenance; reproducing an evaluation means loading the recorded file bytes.
 
-The manifest format is version 1. Individual scenario records do not yet have schema migrations. Future readers must retain compatibility or provide an explicit migration into a separately versioned suite.
+The smoke manifest format is version 1; authored-v1 and authored-v2 use explicitly supported manifest format 2. Individual scenario records do not yet have schema migrations. Future readers must retain compatibility or provide an explicit migration into a separately versioned suite.

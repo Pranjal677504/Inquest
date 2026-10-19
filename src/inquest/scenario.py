@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import math
 import random
+import re
 from dataclasses import asdict, dataclass, field
 
 from .topology import SERVICES, callers_with_hops, callees_with_hops
@@ -177,7 +178,7 @@ class Span:
 @dataclass
 class Scenario:
     id: str
-    seed: int
+    seed: int | None
     split: str
     difficulty: str
     onset: int
@@ -192,16 +193,21 @@ class Scenario:
     gold_tools: list
     gold_services: list
     meta: dict = field(default_factory=dict)
+    origin: str = "generated"
 
     def to_json(self) -> str:
-        return json.dumps(asdict(self), separators=(",", ":"), allow_nan=False)
+        record = asdict(self)
+        # Retain the original generated-record serialization contract.
+        if self.origin == "generated":
+            del record["origin"]
+        return json.dumps(record, separators=(",", ":"), allow_nan=False)
 
     @staticmethod
     def from_json(s: str) -> "Scenario":
         """Load a labeled construction bundle, rejecting malformed records.
 
         Bundles include ground truth and must never be passed directly to an
-        investigation agent. A budgeted observation interface is a later milestone.
+        investigation agent. Use InvestigationEnv for budgeted observations.
         """
         def reject_constant(value):
             raise ValueError(f"Non-finite JSON number: {value}")
@@ -231,10 +237,20 @@ def _validate_options(seed, difficulty, split):
 
 
 def _validate_bundle(scenario):
-    _validate_options(scenario.seed, scenario.difficulty, scenario.split)
-    expected_id = f"{scenario.split}-{scenario.difficulty}-{scenario.seed}"
-    if scenario.id != expected_id:
-        raise ValueError("Scenario ID does not match its generation settings")
+    if scenario.origin == "generated":
+        _validate_options(scenario.seed, scenario.difficulty, scenario.split)
+        expected_id = f"{scenario.split}-{scenario.difficulty}-{scenario.seed}"
+        if scenario.id != expected_id:
+            raise ValueError("Scenario ID does not match its generation settings")
+    elif scenario.origin == "authored":
+        if scenario.seed is not None or scenario.split != "holdout":
+            raise ValueError("Authored scenarios require a null seed and holdout split")
+        if not isinstance(scenario.id, str) or not re.fullmatch(r"authored-v[12]-[0-9]{3}", scenario.id):
+            raise ValueError("Invalid authored scenario ID")
+        if not isinstance(scenario.difficulty, str) or scenario.difficulty not in DIFFICULTY:
+            raise ValueError("Authored difficulty must be easy, medium, or hard")
+    else:
+        raise ValueError("Unknown scenario origin")
     if type(scenario.onset) is not int or not 0 <= scenario.onset < HORIZON:
         raise ValueError("onset must be a minute within the telemetry horizon")
     if not isinstance(scenario.fault_type, str) or scenario.fault_type not in FAULTS:
@@ -261,6 +277,17 @@ def _validate_bundle(scenario):
     for service in SERVICES:
         if not isinstance(scenario.logs[service], list) or not isinstance(scenario.health[service], dict):
             raise ValueError("Service logs and health must be a list and an object")
+        health = scenario.health[service]
+        if not {"status", "version", "restarts_1h", "cert_days_left"} <= health.keys():
+            raise ValueError(f"Health for {service} is missing required fields")
+        if health["status"] not in ("healthy", "degraded", "down"):
+            raise ValueError(f"Invalid health status for {service}")
+        if not isinstance(health["version"], str) or not health["version"].strip():
+            raise ValueError(f"Health version for {service} must be a nonempty string")
+        _nonnegative_int(health["restarts_1h"], f"Health restart count for {service}")
+        # Zero and negative values represent an expiring or expired certificate.
+        if type(health["cert_days_left"]) is not int:
+            raise ValueError(f"Health certificate days for {service} must be an integer")
         for record in scenario.logs[service]:
             if not isinstance(record, dict) or set(record) != {"t", "level", "msg"}:
                 raise ValueError("Invalid log record")
