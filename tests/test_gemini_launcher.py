@@ -44,6 +44,7 @@ def test_empty_key_never_starts_a_model_request(monkeypatch):
 @pytest.mark.parametrize("resume", [False, True])
 def test_fresh_suite_uses_separate_output_and_frozen_policy(monkeypatch, resume):
     captured = []
+    monkeypatch.setenv("GEMINI_API_KEY", "before-test")
     monkeypatch.setattr("getpass.getpass", lambda prompt: "synthetic-test-key")
     monkeypatch.setattr("inquest.cli.main", lambda argv: captured.append(argv) or 0)
     monkeypatch.setattr(sys, "argv", ["run_gemini_eval.py", "--suite", "authored-v2", "--policy", "v2"]
