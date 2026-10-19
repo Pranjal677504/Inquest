@@ -5,6 +5,17 @@ from inquest.frozen import load_frozen_set
 from pathlib import Path
 
 
+def test_saved_run_viewer_is_served_with_no_network_policy():
+    client = app.test_client()
+    response = client.get("/runs")
+    assert response.status_code == 200
+    assert b"Choose run folder" in response.data
+    assert "connect-src 'none'" in response.headers["Content-Security-Policy"]
+    assert b"Open saved investigations" in client.get("/").data
+    assert client.get("/assets/runs.js").status_code == 200
+    assert client.get("/assets/runs.css").status_code == 200
+
+
 def test_frozen_case_hides_construction_labels_until_diagnosis():
     client = app.test_client()
     selection = {"source": "frozen", "split": "dev", "difficulty": "easy", "index": 0}

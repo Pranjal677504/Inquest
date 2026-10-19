@@ -160,6 +160,14 @@ The next priority is a usable browser investigation viewer and connection to loc
 
 The maintainer now handles GitHub commits, pushes, PR updates and merges from VS Code. This progress consolidation is prepared locally as reviewable files/patches; no GitHub mutation is performed during this review.
 
-## How to read this log
+## 2026-10-19 — Private saved-run viewer
+
+Prepared the `/runs` browser interface for maintainer application through VS Code. It opens existing run folders or incremental file selections entirely in the browser, displays manifest-wide completion counts, exact-attempt observations, clickable citations, diagnoses, validation/correctness checks, usage, provider/protocol/transport errors and unfinished episodes. It also displays saved paired-comparison JSON, retaining its limitations and keeping compatibility validation in the CLI.
+
+The viewer uses local assets and system fonts, no browser storage and a network-blocking Content Security Policy. It renders imported values as text, bounds imports, rejects mismatched identities, labels journal gaps, and does not substitute previous attempts for missing current journals. It does not authenticate files or rerun grades. No new runtime dependency, model request, policy/grader/dataset change, or GitHub mutation was made.
+
+Verification passed 454 Python tests and 12 Chromium workflows locally on Linux/Python 3.12 using Playwright 1.55. Invented test files cover failures, partial runs, escaped text, exact attempts, malformed imports, keyboard citations, mobile layout, comparison display and clear/import races. Desktop/mobile renders were inspected; all 64 episodes across four private maintainer folders opened without post-load network traffic. Their contents and performance aggregates remain outside this code patch. Local execution controls and interactive validated pairing of two folders remain later work. See [Saved runs](SAVED_RUNS.md).
+
+## Reading the log
 
 Entries use the date on which work occurred. Multiple changes on one day appear together. Each entry identifies the affected milestone, origin of integrated components, verification evidence, limitations, and next planned capability.

@@ -8,6 +8,8 @@ Policy v3 is available as an opt-in development candidate. Its guidance, limitat
 
 ## Install and run without credentials
 
+To inspect an existing run visually, start `python app.py`, open <http://127.0.0.1:8000/runs>, and select its folder. [The saved-run viewer](SAVED_RUNS.md) shows observations, citations, reports and execution errors locally without an API request. It also displays JSON exported by `inquest compare`; compatibility checks remain the CLI's responsibility.
+
 ```bash
 python -m pip install -e ".[dev]"
 python -m inquest run \

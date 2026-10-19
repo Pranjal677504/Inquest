@@ -15,6 +15,7 @@ Investigate an incident across eight services: follow dependencies, inspect metr
 | Component | Delivered behavior | Evidence |
 |---|---|---|
 | Browser workbench | Select a frozen or generated case; inspect telemetry; submit a diagnosis and reveal the answer | [App](app.py), [web tests](tests/test_web.py) |
+| Saved-run viewer | Open local run folders; inspect exact-attempt observations, citations, reports, errors, and saved comparisons without model calls or uploads | [Viewer guide](docs/SAVED_RUNS.md), [browser tests](browser_tests/test_saved_runs.py) |
 | Incident generator | Eight fault categories, one root cause, 120 minutes of telemetry, JSON serialization | [Generator](src/inquest/scenario.py), [example](examples/generate_incident.py) |
 | Frozen inputs | 120 smoke cases plus two separately versioned 16-case authored suites, provenance manifests and SHA-256 verification | [Data guide](datasets/README.md), [loader tests](tests/test_frozen.py) |
 | Investigation environment | Eight read-only tools, charged attempts, observation IDs and detached transcripts | [Tool contract](docs/TOOLS.md), [environment tests](tests/test_env.py) |
@@ -37,6 +38,8 @@ python app.py
 ```
 
 Open `http://127.0.0.1:8000`. On Windows, use `py -3.14 -m venv .venv` and `.venv\Scripts\Activate.ps1`; Windows execution has not been verified.
+
+For saved investigations, open `http://127.0.0.1:8000/runs` and choose a single run folder containing `run.json` and `episodes/`. Files stay in the browser tab; no API key or model request is needed. See [saved-run review](docs/SAVED_RUNS.md).
 
 For the Python examples and tests:
 
