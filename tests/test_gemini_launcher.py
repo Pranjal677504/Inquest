@@ -7,7 +7,7 @@ import pytest
 
 
 @pytest.mark.parametrize("resume", [False, True])
-@pytest.mark.parametrize("policy", ["v1", "v2"])
+@pytest.mark.parametrize("policy", ["v1", "v2", "v3"])
 def test_gemini_launcher_uses_full_suite_and_keeps_key_out_of_arguments(monkeypatch, capsys, resume, policy):
     captured = []
     monkeypatch.setenv("GEMINI_API_KEY", "before-test")
@@ -24,7 +24,7 @@ def test_gemini_launcher_uses_full_suite_and_keeps_key_out_of_arguments(monkeypa
     assert arguments[arguments.index("--policy") + 1] == policy
     assert "--pause-on-rate-limit" in arguments
     assert Path(arguments[arguments.index("--output") + 1]).name == (
-        "gemini-3-5-authored-budget5-v1" if policy == "v1" else "gemini-3-5-authored-budget5-policy-v2")
+        "gemini-3-5-authored-budget5-v1" if policy == "v1" else f"gemini-3-5-authored-budget5-policy-{policy}")
     assert ("--resume" in arguments) == resume
     assert "synthetic-test-key" not in repr(arguments) + capsys.readouterr().out
     # Environment handoff exists only in this test process; pytest restores it.
@@ -42,21 +42,30 @@ def test_empty_key_never_starts_a_model_request(monkeypatch):
 
 
 @pytest.mark.parametrize("resume", [False, True])
-def test_fresh_suite_uses_separate_output_and_frozen_policy(monkeypatch, resume):
+@pytest.mark.parametrize("policy", ["v2", "v3"])
+def test_fresh_suite_uses_separate_output_and_frozen_policy(monkeypatch, resume, policy):
     captured = []
     monkeypatch.setenv("GEMINI_API_KEY", "before-test")
     monkeypatch.setattr("getpass.getpass", lambda prompt: "synthetic-test-key")
     monkeypatch.setattr("inquest.cli.main", lambda argv: captured.append(argv) or 0)
-    monkeypatch.setattr(sys, "argv", ["run_gemini_eval.py", "--suite", "authored-v2", "--policy", "v2"]
+    monkeypatch.setattr(sys, "argv", ["run_gemini_eval.py", "--suite", "authored-v2", "--policy", policy]
                         + (["--resume"] if resume else []))
     path = Path(__file__).resolve().parents[1] / "scripts/run_gemini_eval.py"
     assert runpy.run_path(str(path))["run"]() == 0
     args = captured[0]
     assert Path(args[args.index("--suite") + 1]).name == "authored-v2"
-    assert Path(args[args.index("--output") + 1]).name == "gemini-3-5-authored-v2-budget5-policy-v2"
+    assert Path(args[args.index("--output") + 1]).name == f"gemini-3-5-authored-v2-budget5-policy-{policy}"
     assert ("--resume" in args) == resume
     assert "--pause-on-rate-limit" in args
     assert "synthetic-test-key" not in repr(args)
+    # Hold generation settings equal to the recorded V2 evaluation contract.
+    import json
+    contract = json.loads((path.parents[1] / "datasets/authored-v2/manifest.json").read_text())["evaluation_contract"]
+    for flag, field in [("--model", "model"), ("--max-model-turns", "max_model_turns"),
+                        ("--max-output-tokens", "max_output_tokens"), ("--budgets", "budget"),
+                        ("--token-limit-param", "token_limit_param")]:
+        assert args[args.index(flag) + 1] == str(contract[field])
+    assert "--omit-temperature" in args and "--json-mode" in args
 
 
 @pytest.mark.parametrize("changed_prompt", [False, True])

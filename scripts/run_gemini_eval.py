@@ -9,25 +9,28 @@ import os
 from pathlib import Path
 
 from inquest.cli import main
-from inquest.agent_protocol import system_prompt
+from inquest.agent_protocol import POLICIES, system_prompt
 
 
 def run():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--resume", action="store_true", help="Resume this same saved configuration")
-    parser.add_argument("--policy", choices=("v1", "v2"), default="v1")
+    parser.add_argument("--policy", choices=POLICIES, default="v1")
     parser.add_argument("--suite", choices=("authored-v1", "authored-v2"), default="authored-v1")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     if args.suite == "authored-v2":
         contract = json.loads((root / "datasets/authored-v2/manifest.json").read_text())["evaluation_contract"]
-        if args.policy != contract["policy"]:
-            parser.error("The fresh authored-v2 experiment requires --policy v2")
-        if hashlib.sha256(system_prompt(args.policy).encode()).hexdigest() != contract["prompt_sha256"]:
+        if args.policy not in (contract["policy"], "v3"):
+            parser.error("authored-v2 requires --policy v2 (frozen reference) or v3 (development candidate)")
+        if args.policy == contract["policy"] and hashlib.sha256(system_prompt(args.policy).encode()).hexdigest() != contract["prompt_sha256"]:
             parser.error("Frozen v2 prompt changed; use a separately versioned experiment")
     output_name = (f"gemini-3-5-authored-v2-budget5-policy-{args.policy}" if args.suite == "authored-v2"
                    else {"v1": "gemini-3-5-authored-budget5-v1",
-                         "v2": "gemini-3-5-authored-budget5-policy-v2"}[args.policy])
+                         "v2": "gemini-3-5-authored-budget5-policy-v2",
+                         "v3": "gemini-3-5-authored-budget5-policy-v3"}[args.policy])
+    if args.policy == "v3":
+        print("Policy v3 is a development candidate; both authored suites informed its design.", flush=True)
     key = getpass.getpass("Paste Gemini API key, then press Enter: ").strip()
     if not key:
         parser.error("No API key entered")

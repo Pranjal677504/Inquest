@@ -9,7 +9,7 @@ from .scenario import FAULTS, FIX_ACTION
 from .topology import SERVICES
 
 PROTOCOL_VERSION = "inquest-json-actions-v1"
-POLICIES = ("v1", "v2")
+POLICIES = ("v1", "v2", "v3")
 MAX_ACTION_CHARS = 32_000
 
 
@@ -89,6 +89,34 @@ def system_prompt(policy: str = "v1") -> str:
     )
     if policy == "v1":
         return original
+    if policy == "v3":
+        return original + "\n\nInvestigation policy v3 (mechanism before event):\n" + (
+            "Use alerts to locate the earliest affected service and follow caller-to-dependency paths. "
+            "Keep a leading explanation and a competing explanation internally; spend the small tool "
+            "budget on observations that distinguish them, rather than collecting more change headlines.\n"
+            "DEMAND CHECK: For unexplained latency, queueing or saturation, query rps on the affected "
+            "service early, before concluding that a release broke it. Compare demand timing with symptom "
+            "onset. Increased arrivals support a surge; unchanged arrivals require another explanation. "
+            "Normal demand alone does not distinguish expensive work from a resource leak.\n"
+            "MISSING LOGS: Zero matching records do not establish a deployment failure. After an empty "
+            "root-service log result, prioritize a caller's logs or a relevant dependency trace for the "
+            "missing mechanism. Select get_trace status error or timeout to match observed failures. "
+            "Do not repeat empty log filters or substitute a degraded health status for causal evidence.\n"
+            "CAUSE CHECK: A deployment before an alert is a candidate trigger, not a demonstrated fault "
+            "mechanism. Inspect the relevant log, event detail, metric or trace before attributing failure "
+            "to code. Successful operation after a change and normal suspected-dependency responses "
+            "weaken that explanation. No recorded event does not prove that no change occurred. "
+            "Distinguish the trigger from the most specific supported fault: a release can introduce a "
+            "resource leak. Flat memory does not rule out leaked file handles, connections or threads.\n"
+            "REPORT CHECK: Link the proposed service, mechanism and repair to actual observations; "
+            "look for the strongest contradiction. If a useful distinguishing check is still missing "
+            "and a step remains, use it before reporting. Stop early only when existing evidence "
+            "distinguishes the cause. Cite supporting observations and describe unresolved uncertainty "
+            "concisely; a plausible repair or matching event alone does not justify high confidence.\n"
+            "Return one action with exactly kind, tool and args, or kind and report. All tool arguments "
+            "belong inside args. Never emit checklists, hypotheses or reasoning as extra fields. "
+            'Example: {"kind":"tool","tool":"query_metric","args":{"service":"auth","metric":"rps"}}.'
+        )
     return original + "\n\nInvestigation policy v2 (counterevidence):\n" + (
         "Maintain a leading explanation and a plausible competing explanation using observed evidence. "
         "Choose the next probe for its ability to distinguish those explanations. A recent change is a "

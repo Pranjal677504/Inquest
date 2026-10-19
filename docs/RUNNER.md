@@ -4,6 +4,8 @@ The runner executes one JSON action at a time against the existing budgeted envi
 
 **Status:** the runner and provider contracts are tested. The included experiments contain an offline heuristic baseline and a historical Gemini v1 summary/aggregate audit; raw Gemini transcripts remain private. See `experiments/gemini-authored-budget5-v1/README.md`. Policy v2 is frozen, and the separate authored-v2 suite is prepared for its next evaluation. No model results are included for the fresh suite. Mock HTTP responses and scripted test replies are software tests, not model experiments.
 
+Policy v3 is available as an opt-in development candidate. Its guidance, limitations, and exact V2/V3 comparison workflow are documented in [Policy V3](POLICY_V3.md). Neither authored suite is independent assessment data for V3.
+
 ## Install and run without credentials
 
 ```bash
@@ -150,6 +152,26 @@ python -m inquest summarize --run-dir runs/gemini-3-5-authored-v2-budget5-policy
 ```
 
 Report this suite separately from authored-v1. The comparison command rejects pairing different suites; a higher percentage on different cases is not a paired policy gain. The [evidence coverage review](EVIDENCE_COVERAGE.md) documents why a health observation may be useful despite receiving zero credit under old case metadata. Historical grader code, cases, and scores remain unchanged; useful health probes are explicitly allowed in the new suite's evidence metadata.
+
+### V3 development candidate on the same cases
+
+To compare against the existing completed V2 run, run only the new candidate:
+
+```bash
+python scripts/run_gemini_eval.py --suite authored-v2 --policy v3
+```
+
+The new output directory is `runs/gemini-3-5-authored-v2-budget5-policy-v3`. Model/generation settings, budget, pacing and quota pause remain the same. Append `--resume` after quota recovery or interruption without changing code/settings. V3 guidance emphasizes demand, caller evidence, mechanism and contradiction checks; it adds no hidden tool calls or semantic enforcement. See [the policy contract](POLICY_V3.md).
+
+After completion, compare offline:
+
+```bash
+python -m inquest compare \
+  --baseline runs/gemini-3-5-authored-v2-budget5-policy-v2 \
+  --candidate runs/gemini-3-5-authored-v2-budget5-policy-v3
+```
+
+Both authored suites informed V3 development. The launcher and comparison output disclose that context. Preserve V2 and report all paired outcomes, including regressions. V3 accuracy is unmeasured until a live evaluation; scripted checks are not evidence of accuracy gains. Existing defaults and V2 output paths remain unchanged. The authored-v2 launcher still checks the original frozen prompt when running the V2 reference; V3 is a separately fingerprinted experiment.
 
 ## Action and budget contract
 

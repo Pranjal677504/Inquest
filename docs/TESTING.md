@@ -41,6 +41,10 @@ These checks validate interfaces and clue reachability. They are not an independ
 
 CI verifies the four new canonical checksums separately from the old suites. The documented paths are evaluator-authored fixtures and establish clue reachability and grading compatibility, not autonomous investigation or independent causal validation. See [the new suite guide](../datasets/authored-v2/README.md) and [evidence coverage review](EVIDENCE_COVERAGE.md).
 
+## V3 policy candidate
+
+`tests/test_policy_v3.py` pins all three prompt hashes and exercises scripted demand/caller-log paths, strict envelope limits, unchanged grading of unsupported reports, saved V2/V3 comparison and incompatible resume rejection. Launcher tests preserve reference generation settings, paths, key privacy and quota pause. These verify execution contracts; they do not show that a model chooses the scripted probes or becomes more accurate. See [Policy V3](POLICY_V3.md) before interpreting a development comparison.
+
 ## Agent runner and provider contracts
 
 `tests/test_runner.py` covers strict JSON, bounded protocol errors, charged invalid calls, report validation, context/turn limits, label isolation, mutation isolation, crash-safe result replacement, process locking, interrupted resume, preserved failed attempts, configuration mismatch, summaries and replay. `tests/test_backends.py` uses real loopback HTTP to check Ollama/compatible request bodies, response identities, usage accounting, bounded retries, failed authentication, redirect rejection and error-body redaction. All provider responses in these tests are fixtures; they are not model results.

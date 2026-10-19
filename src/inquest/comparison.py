@@ -74,6 +74,12 @@ def compare_runs(baseline: str | Path, candidate: str | Path):
             "baseline_mean_elapsed_seconds": original["mean_latency_seconds"],
             "candidate_mean_elapsed_seconds": updated["mean_latency_seconds"],
         }
+    policies = [config["episode_options"].get("policy", "v1") for config in (left, right)]
+    development_note = (
+        "Policy v3 was designed after inspecting authored-v1 and authored-v2 results; those suites are development data"
+        if "v3" in policies else
+        "Policy v2 was developed after inspecting v1 results; these cases are development data"
+    )
     return {
         "kind": "paired_policy_comparison", "groups": groups, "cases": rows,
         "baseline": {"fingerprint": manifests[0]["fingerprint"], "policy": left["episode_options"].get("policy", "v1"),
@@ -83,7 +89,7 @@ def compare_runs(baseline: str | Path, candidate: str | Path):
         "operational_differences": {k: {"baseline": left["backend"].get(k), "candidate": right["backend"].get(k)}
                                     for k in OPERATIONAL_FIELDS if left["backend"].get(k) != right["backend"].get(k)},
         "limitations": ["Descriptive paired results on public synthetic cases; no significance or production claim",
-                        "Policy v2 was developed after inspecting v1 results; these cases are development data",
+                        development_note,
                         "Provider aliases and default sampling do not guarantee identical remote weights or determinism",
                         "Operational differences and retries affect usage and elapsed latency"],
     }

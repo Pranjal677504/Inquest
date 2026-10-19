@@ -100,14 +100,23 @@ def test_new_health_evidence_is_counted_without_changing_legacy_metadata():
     assert old.gold_tools == ["logs"]
 
 
-def test_fresh_renderer_reproduces_all_frozen_bytes(tmp_path, monkeypatch):
+def test_fresh_renderer_reproduces_data_and_records_current_construction_source(tmp_path, monkeypatch):
     monkeypatch.setattr("inquest.scenario.generate", forbidden)
     monkeypatch.setattr("inquest.scenario._signal", forbidden)
     monkeypatch.setattr("random.Random", forbidden)
     out = tmp_path / "fresh"
     build(SUITE / "authoring.json", out)
-    for path in out.iterdir():
-        assert path.read_bytes() == (SUITE / path.name).read_bytes()
+    for name in ("authoring.json", "holdout.jsonl", "casebook.json"):
+        assert (out / name).read_bytes() == (SUITE / name).read_bytes()
+    # A new policy may change the module's bytes while preserving the V2 prompt.
+    # Rebuilding must declare that source change, not reuse stale provenance.
+    rebuilt = json.loads((out / "manifest.json").read_text())
+    recorded = json.loads((SUITE / "manifest.json").read_text())
+    source_file = "src/inquest/agent_protocol.py"
+    current_hash = hashlib.sha256((ROOT / source_file).read_bytes()).hexdigest()
+    assert rebuilt["provenance"]["source_sha256"][source_file] == current_hash
+    recorded["provenance"]["source_sha256"][source_file] = current_hash
+    assert rebuilt == recorded
     assert len(load_frozen_set(out, "holdout")) == 16
     with pytest.raises(ValueError, match="Refusing to overwrite"):
         build(SUITE / "authoring.json", out)
