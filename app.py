@@ -67,6 +67,17 @@ def assets(name):
     return send_from_directory(ROOT / "public" / "assets", name)
 
 
+@app.get("/runs")
+def saved_runs():
+    response = send_from_directory(ROOT / "public", "runs.html")
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'none'; script-src 'self'; style-src 'self'; "
+        "connect-src 'none'; base-uri 'none'; object-src 'none'; "
+        "form-action 'none'; frame-ancestors 'none'"
+    )
+    return response
+
+
 @app.get("/api/config")
 def config():
     return jsonify({

@@ -29,6 +29,8 @@ Checks exercise real frozen/generated incident requests, diagnosis submission, c
 
 These are application correctness checks. Handcrafted diagnoses and assertions against evaluator-held labels are not autonomous-agent evaluation results. The additive `evidence_relevant_success` metric is documented in [Grading](GRADING.md); it does not establish claim-level evidence support.
 
+`browser_tests/test_saved_runs.py` uses invented local run artifacts to exercise folder and incremental file imports, keyboard citation navigation, escaped untrusted text, backend failures with absent reports, unfinished episodes, missing/exact-attempt journals, mismatched identities, truncated journals, comparison rendering, mobile width, clearing and delayed import races. Every viewer test fails on JavaScript errors, post-load network requests, or nonempty browser storage. The web test checks the `/runs` route and its network-blocking Content Security Policy. These are viewer correctness checks, not model results or a cryptographic artifact audit.
+
 ## Authored causal fixtures
 
 `tests/test_authored.py` exercises every case’s support and counterevidence probes through the tools, grading compatibility, metadata isolation, malformed identity rejection, checksums, casebook binding, generator independence, source-to-data reproduction, and overwrite protection. Legacy smoke serialization is checked against all 120 original records. Verify the four additional canonical hashes from `datasets/authored-v1` with `sha256sum -c SHA256SUMS`.

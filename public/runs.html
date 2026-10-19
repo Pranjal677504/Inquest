@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Inspect saved Inquest investigations privately in your browser.">
+  <title>Inquest — Saved investigations</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/runs.css">
+  <script src="/assets/runs.js" defer></script>
+</head>
+<body>
+  <header class="masthead"><a class="wordmark" href="/">INQUEST<span>.</span></a><nav aria-label="Main"><a href="/">Incident workbench</a><a href="/runs" aria-current="page">Saved investigations</a></nav><span class="private-label">LOCAL FILES · NO MODEL CALLS</span></header>
+  <main>
+    <section class="hero"><p class="eyebrow">INVESTIGATION REVIEW / 01</p><h1>Follow the evidence.</h1><p>Open a saved run to inspect what the agent observed, what it concluded, and where it failed.</p></section>
+    <section class="import-panel" aria-label="Open saved files">
+      <div><h2>Open a run folder</h2><p>Select one folder inside <code>runs/</code> containing <code>run.json</code> and <code>episodes/</code>. Extract archives first. Files stay in this tab’s memory; reloading clears them.</p></div>
+      <div class="import-actions"><label class="button primary" for="run-folder">Choose run folder</label><input id="run-folder" class="file-input" type="file" webkitdirectory multiple><button id="clear" type="button">Clear review</button></div>
+      <details><summary>Folder picker unavailable?</summary><p>Select <code>run.json</code> first, then add an episode’s <code>result.json</code> and its matching <code>attempt-NNN.jsonl</code>. Repeat for more episodes.</p><label class="button" for="run-files">Choose run files</label><input id="run-files" class="file-input" type="file" multiple accept=".json,.jsonl"></details>
+    </section>
+    <p id="import-status" role="status" aria-live="polite">No run open.</p>
+    <div id="import-error" class="notice error" role="alert" hidden></div>
+    <section id="run-review" hidden>
+      <div class="run-heading"><div><p class="eyebrow">SAVED RUN</p><h2 id="run-title"></h2></div><span id="run-policy" class="pill"></span></div>
+      <div id="run-meta" class="metadata"></div>
+      <div id="run-stats" class="stats" aria-label="Run outcomes"></div>
+      <p class="notice">These are recorded grades on synthetic cases, not a new evaluation or proof of causal support. Coarse evidence relevance is a separate measure. Missing results stay unfinished.</p>
+      <div class="review-grid">
+        <aside class="episodes" aria-label="Episodes"><h2>Episodes</h2><label for="episode-filter">Show outcomes</label><select id="episode-filter"><option value="all">All episodes</option><option value="accepted">Accepted</option><option value="failed">Reported, not accepted</option><option value="errors">Execution errors</option><option value="unfinished">Unfinished</option></select><div id="episode-list"></div></aside>
+        <section id="episode-detail" aria-label="Selected episode" tabindex="-1"></section>
+      </div>
+    </section>
+    <section class="comparison-panel" aria-label="Paired comparison"><p class="eyebrow">POLICY REVIEW / 02</p><h2>Inspect a saved comparison</h2><p>Open JSON produced by <code>python -m inquest compare</code>. Its compatibility checks run in the CLI; this view displays the saved result and its limitations.</p><label class="button" for="comparison-file">Choose comparison JSON</label><input id="comparison-file" class="file-input" type="file" accept=".json"><div id="comparison-status" role="status" aria-live="polite"></div><div id="comparison-error" class="notice error" role="alert" hidden></div><div id="comparison-view"></div></section>
+    <footer>Read-only review · No repair execution · No upload · No API key</footer>
+  </main>
+</body>
+</html>
