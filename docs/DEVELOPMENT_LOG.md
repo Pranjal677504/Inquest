@@ -2,6 +2,8 @@
 
 This repository starts from an existing local Inquest prototype. This log records integration, improvements, verification, and remaining limitations. The initial repository setup and first code milestone were completed on 6 October 2026. Subsequent entries use the actual dates of completed work.
 
+For the consolidated current state, see [Project progress](PROGRESS.md). Earlier statements about pending provider runs or unavailable GitHub access describe their dated checkpoints and are superseded by later entries.
+
 ## 2026-10-06 — Initial setup and first code milestone
 
 ### Repository foundation
@@ -141,6 +143,22 @@ At clean source revision `e79c21f`, ran the fixed `earliest-alert-v1` heuristic 
 Preserved exact prompts, policy responses, observations, reports, metadata and results in two checksummed run archives under `experiments/offline-baseline-v1`, with matching standalone summaries and an explicit failure analysis. Completed-run resume produced identical summaries with no new attempts. Archives were extracted and inspected using the installed CLI outside the checkout, without credentials or model access.
 
 No model request or paid API call was made. The baseline was implemented after the public datasets were authored and inspected; this is not an untouched holdout assessment or a model comparison. Larger budgets did not fix this policy's selection/interpretation limitations. No policy classification logic was changed after observing these recorded results. Actual LLM evaluation remains pending a configured model backend. GitHub publication remains blocked by the existing write-access limitation; local commits and patches are the deliverable.
+
+## 2026-10-19 — Recorded model runs, frozen policies and fresh cases
+
+Added Gemini-compatible request settings and a private-key launcher with pacing, separate policy/suite output directories, finite episode limits, first-429 pause and strict resume. Added offline paired comparison with compatibility checks and explicit gains, regressions, missingness, errors and usage. V1 and V2 prompts retain their historical byte identities.
+
+Prepared authored-v2 as a separate sixteen-case suite after freezing V2: balanced fault/difficulty coverage, four missing-root-log cases, checksummed source/data/casebook/manifest and five-call support/counterevidence paths. Preserved the old canonical data and grader. The evidence coverage review documents why useful health observations may receive no credit under older metadata. The new suite remains single-author synthetic work, not an independently validated holdout.
+
+The maintainer executed hosted Gemini runs and supplied private archives for offline review. Recorded references include V1/V2 on authored-v1 and V2/V3 on authored-v2. Saved request histories, observations, reports and grades were checked through offline replay. Detailed outcomes remain in maintainer-controlled archives. The current [progress page](PROGRESS.md) records implementation status, the evaluation workflow and caveats without publishing private-run aggregates or transcripts.
+
+V3 adds guidance for demand checks, caller evidence, specific mechanisms and contradictions while preserving parser, tool budget, runner loop, grader and frozen inputs. Local verification passed 453 Python tests; all eighteen canonical dataset checksums and whitespace checks passed. Historical V1/V2 replay remained consistent. Prior published CI checkpoints passed Python 3.10–3.14 and Chromium; the current V3 remote CI result was not rechecked during this review.
+
+Keep V2 as the working evaluation baseline and V3 as an experimental candidate while preserving all paired outcomes. Provider failures, malformed actions and incorrect diagnoses must be distinguished. The summary invalid-report count can include an absent report after a backend failure, so it must not automatically be described as malformed submitted reports. Preserve the full case denominator and disclose unavailable usage/confidence. Public single-author development cases do not support production-generalization claims.
+
+The next priority is a usable browser investigation viewer and connection to local execution, with evidence citations, errors, replay and comparison. Independent review, claim-level evidence and calibrated reasoning remain incomplete research milestones. Further prompt-only model runs are not required to start this product work.
+
+The maintainer now handles GitHub commits, pushes, PR updates and merges from VS Code. This progress consolidation is prepared locally as reviewable files/patches; no GitHub mutation is performed during this review.
 
 ## How to read this log
 

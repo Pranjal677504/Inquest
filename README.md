@@ -4,9 +4,11 @@
 
 [Try the workbench](https://inquestbench.vercel.app) · [Tool API](docs/TOOLS.md) · [Grading](docs/GRADING.md) · [Frozen data](datasets/README.md) · [Related work](docs/RELATED_WORK.md) · [Roadmap](docs/ROADMAP.md)
 
+[Project progress](docs/PROGRESS.md) consolidates completed capabilities, reviewed experiments, known limitations and the next product milestone.
+
 Investigate an incident across eight services: follow dependencies, inspect metrics and logs, compare recent changes, and submit a diagnosis. The browser demo works without an API key. The Python toolkit exposes the same incident data through budgeted tools and grades reports against evaluator-held labels.
 
-**Status:** incident construction, the browser workbench, frozen loading, budgeted tools, and report grading work today. The recorded single-agent runner supports versioned policies, offline paired comparisons, and resumable model evaluations. V1/V2 prompts are preserved; [V3](docs/POLICY_V3.md) is an opt-in development candidate on the existing authored suites, with live accuracy unmeasured. A fitted reasoner remains future work. This is an early evaluation toolkit, not a validated production benchmark.
+**Status:** incident construction, the browser workbench, frozen loading, budgeted tools, and report grading work today. The recorded single-agent runner supports versioned policies, offline paired comparisons, and resumable model evaluations. V1/V2 prompts are preserved; [V3](docs/POLICY_V3.md) remains an experimental guidance candidate. V2 is the working evaluation baseline; the launcher default remains V1. A fitted reasoner remains future work. This is an early evaluation toolkit, not a validated production benchmark.
 
 ## What you can run
 
@@ -112,7 +114,7 @@ Replayability is established practice in incident benchmarks. [Cloud-OpsBench, O
 
 Inquest's proposed experiments ask whether **information-gain probe selection**, **confidence calibration**, and **success under equal investigation budgets** improve over simpler policies. Those are questions to test, not demonstrated advantages or claims of novelty. The [design notes](docs/DESIGN.md) explain the proposed belief model and its assumptions.
 
-Next priorities are independent case review and a V2/V3 development comparison through the [runner](docs/RUNNER.md), saving transcripts, failures, and usage. Both authored suites informed V3; generalization would require separate assessment data. The full structured-agent comparison still depends on implementing and validating the reasoner. [Acceptance criteria and prerequisites](docs/ROADMAP.md) define what must exist before results can be claimed.
+Next priorities are a browser investigation viewer, connection to local execution, and transparent evidence/error/comparison displays. Independent case review and separate assessment data remain necessary for generalization claims. Both authored suites informed V3. The full structured-agent comparison still depends on implementing and validating the reasoner. [Acceptance criteria and prerequisites](docs/ROADMAP.md) define what must exist before results can be claimed.
 
 ## Repository guide
 

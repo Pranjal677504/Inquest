@@ -2,7 +2,7 @@
 
 The runner executes one JSON action at a time against the existing budgeted environment. It supports a transparent offline heuristic, a local Ollama model, and a hosted/local compatible chat-completions endpoint. Model backends receive public chat messages and observations only. The evaluator retains cases, labels, grading, IDs, and provenance.
 
-**Status:** the runner and provider contracts are tested. The included experiments contain an offline heuristic baseline and a historical Gemini v1 summary/aggregate audit; raw Gemini transcripts remain private. See `experiments/gemini-authored-budget5-v1/README.md`. Policy v2 is frozen, and the separate authored-v2 suite is prepared for its next evaluation. No model results are included for the fresh suite. Mock HTTP responses and scripted test replies are software tests, not model experiments.
+**Status:** the runner and provider contracts are tested. The included experiments contain an offline heuristic baseline and a historical Gemini v1 summary/aggregate audit; raw Gemini transcripts remain private. See `experiments/gemini-authored-budget5-v1/README.md`. Maintainer-executed authored-v2 V2/V3 runs have been reviewed offline; the review workflow, implementation status and limitations appear in [Project progress](PROGRESS.md). Detailed outcomes remain in maintainer-controlled run archives. V2 remains the working evaluation baseline. Mock HTTP responses and scripted test replies are software tests, not model experiments.
 
 Policy v3 is available as an opt-in development candidate. Its guidance, limitations, and exact V2/V3 comparison workflow are documented in [Policy V3](POLICY_V3.md). Neither authored suite is independent assessment data for V3.
 
@@ -171,7 +171,7 @@ python -m inquest compare \
   --candidate runs/gemini-3-5-authored-v2-budget5-policy-v3
 ```
 
-Both authored suites informed V3 development. The launcher and comparison output disclose that context. Preserve V2 and report all paired outcomes, including regressions. V3 accuracy is unmeasured until a live evaluation; scripted checks are not evidence of accuracy gains. Existing defaults and V2 output paths remain unchanged. The authored-v2 launcher still checks the original frozen prompt when running the V2 reference; V3 is a separately fingerprinted experiment.
+Both authored suites informed V3 development. The launcher and comparison output disclose that context. Preserve V2 and report all paired outcomes, including regressions. See [Project progress](PROGRESS.md) for current decisions and review status; scripted checks are not evidence of accuracy gains. Existing defaults and V2 output paths remain unchanged. The authored-v2 launcher still checks the original frozen prompt when running the V2 reference; V3 is a separately fingerprinted experiment. An existing completed output must be preserved; do not rerun merely to replace unfavorable results.
 
 ## Action and budget contract
 
