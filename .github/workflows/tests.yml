@@ -34,6 +34,9 @@ jobs:
       - name: Verify authored bytes
         working-directory: datasets/authored-v1
         run: sha256sum -c SHA256SUMS
+      - name: Verify fresh authored bytes
+        working-directory: datasets/authored-v2
+        run: sha256sum -c SHA256SUMS
       - name: Run examples outside the checkout
         working-directory: ${{ runner.temp }}
         env:

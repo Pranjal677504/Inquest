@@ -35,6 +35,12 @@ These are application correctness checks. Handcrafted diagnoses and assertions a
 
 These checks validate interfaces and clue reachability. They are not an independent review of the causal narratives or agent accuracy measurements. See [the authored suite guide](../datasets/authored-v1/README.md) for limitations.
 
+## Fresh authored-v2 suite
+
+`tests/test_authored_v2.py` checks all sixteen five-call support/counterevidence paths, category balance, missing-log cases, rejection of incorrect diagnoses, selected mechanism-specific metric/health signals, metadata isolation, checksum corruption, source reproduction, and cross-suite identity rejection. Tests pin the existing V2 prompt hash; no provider is called. The launcher tests check separate output paths, unchanged old defaults, quota pause, resume, and rejection of an incompatible policy or changed prompt before requesting a key.
+
+CI verifies the four new canonical checksums separately from the old suites. The documented paths are evaluator-authored fixtures and establish clue reachability and grading compatibility, not autonomous investigation or independent causal validation. See [the new suite guide](../datasets/authored-v2/README.md) and [evidence coverage review](EVIDENCE_COVERAGE.md).
+
 ## Agent runner and provider contracts
 
 `tests/test_runner.py` covers strict JSON, bounded protocol errors, charged invalid calls, report validation, context/turn limits, label isolation, mutation isolation, crash-safe result replacement, process locking, interrupted resume, preserved failed attempts, configuration mismatch, summaries and replay. `tests/test_backends.py` uses real loopback HTTP to check Ollama/compatible request bodies, response identities, usage accounting, bounded retries, failed authentication, redirect rejection and error-body redaction. All provider responses in these tests are fixtures; they are not model results.

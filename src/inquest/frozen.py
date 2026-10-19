@@ -38,9 +38,9 @@ def load_frozen_set(directory: str | Path, name: str) -> tuple[Scenario, ...]:
     if not isinstance(manifest, dict) or type(manifest.get("format_version")) is not int:
         raise ValueError("Invalid frozen suite manifest")
     suite = (manifest.get("suite_id"), manifest.get("format_version"))
-    if suite not in (("inquest-smoke-v1", 1), ("inquest-authored-v1", 2)):
+    if suite not in (("inquest-smoke-v1", 1), ("inquest-authored-v1", 2), ("inquest-authored-v2", 2)):
         raise ValueError("Unsupported frozen suite format or version")
-    authored = suite == ("inquest-authored-v1", 2)
+    authored = suite[0] in ("inquest-authored-v1", "inquest-authored-v2")
     if (name == "holdout") != authored:
         raise ValueError("Set name does not belong to this frozen suite")
     if not isinstance(manifest.get("sets"), dict):
@@ -61,10 +61,11 @@ def load_frozen_set(directory: str | Path, name: str) -> tuple[Scenario, ...]:
     if authored:
         if entry.get("split") != "holdout" or entry.get("difficulty") != "mixed":
             raise ValueError("Invalid authored set settings")
-        if any(s.origin != "authored" or s.split != "holdout" for s in scenarios):
+        prefix = manifest["suite_id"].removeprefix("inquest-") + "-"
+        if any(s.origin != "authored" or s.split != "holdout" or not s.id.startswith(prefix) for s in scenarios):
             raise ValueError("Authored set contains an incompatible scenario")
         casebook = json.loads(read_verified("casebook.json"))
-        if not isinstance(casebook, dict) or casebook.get("suite_id") != "inquest-authored-v1" or casebook.get("format_version") != 1 or not isinstance(casebook.get("cases"), list):
+        if not isinstance(casebook, dict) or casebook.get("suite_id") != manifest["suite_id"] or casebook.get("format_version") != 1 or not isinstance(casebook.get("cases"), list):
             raise ValueError("Invalid authored casebook")
         if any(not isinstance(case, dict) for case in casebook["cases"]):
             raise ValueError("Invalid authored casebook record")

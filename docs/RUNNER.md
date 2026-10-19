@@ -2,7 +2,7 @@
 
 The runner executes one JSON action at a time against the existing budgeted environment. It supports a transparent offline heuristic, a local Ollama model, and a hosted/local compatible chat-completions endpoint. Model backends receive public chat messages and observations only. The evaluator retains cases, labels, grading, IDs, and provenance.
 
-**Status:** the runner and provider contracts are tested. The included experiments contain an offline heuristic baseline and the summary/aggregate audit of a user-executed 16-case Gemini v1 run: 10/16 accepted, 10/16 with relevant evidence. All 92 request histories, 67 observations, and final scores reproduced offline from the privately supplied archive; raw Gemini transcripts remain private. See `experiments/gemini-authored-budget5-v1/README.md`. Policy v2 is implemented but has no live results yet. Mock HTTP responses and scripted test replies are software tests, not model experiments.
+**Status:** the runner and provider contracts are tested. The included experiments contain an offline heuristic baseline and a historical Gemini v1 summary/aggregate audit; raw Gemini transcripts remain private. See `experiments/gemini-authored-budget5-v1/README.md`. Policy v2 is frozen, and the separate authored-v2 suite is prepared for its next evaluation. No model results are included for the fresh suite. Mock HTTP responses and scripted test replies are software tests, not model experiments.
 
 ## Install and run without credentials
 
@@ -125,7 +125,31 @@ python -m inquest compare \
 
 Comparison requires identical cases, dataset hashes, protocol, budgets, episode limits, scoring-source hashes, model, and generation settings, with clean recorded source. It reports gains and regressions per case and difficulty, Brier values/missingness, and provider-reported usage. Operational differences such as the new quota-pause option are disclosed. It refuses incomplete runs rather than dropping unfinished cases. Historical v1 manifests without a named policy remain readable as v1; strict resume still rejects changed source/configuration. Historical model aliases/default sampling can vary over time, so a paired comparison does not prove a causal or statistically significant improvement.
 
-V2 was developed after reviewing the v1 failures. Treat this suite as development data. Preserve both full runs, including failures; freeze the next policy before creating fresh evaluation cases. Fresh-case validation and live v2 performance remain pending, and no success improvement is claimed from scripted tests.
+V2 was developed after reviewing the v1 failures. Treat authored-v1 as development data. Preserve both full runs, including failures. The next suite is described below; no success improvement is claimed from scripted tests.
+
+### Fresh cases with the frozen V2 policy
+
+The separate [authored-v2 suite](../datasets/authored-v2/README.md) contains sixteen newly authored mechanisms and distractor combinations. The prompt is the exact V2 prompt published before these cases were prepared. Preparation used no live model calls. The new cases share the ontology, topology, renderer, and baseline telemetry with authored-v1 and were prepared by the same author after earlier development review; they are not an independent or secret benchmark.
+
+After pulling committed source, run:
+
+```bash
+python scripts/run_gemini_eval.py --suite authored-v2 --policy v2
+```
+
+This uses the same provider settings, budget, pacing, and quota pause as the existing launcher. It checks the frozen prompt before asking for a key. Results go to `runs/gemini-3-5-authored-v2-budget5-policy-v2`; previous runs remain intact. Resume without changing settings or source:
+
+```bash
+python scripts/run_gemini_eval.py --suite authored-v2 --policy v2 --resume
+```
+
+To inspect results offline:
+
+```bash
+python -m inquest summarize --run-dir runs/gemini-3-5-authored-v2-budget5-policy-v2
+```
+
+Report this suite separately from authored-v1. The comparison command rejects pairing different suites; a higher percentage on different cases is not a paired policy gain. The [evidence coverage review](EVIDENCE_COVERAGE.md) documents why a health observation may be useful despite receiving zero credit under old case metadata. Historical grader code, cases, and scores remain unchanged; useful health probes are explicitly allowed in the new suite's evidence metadata.
 
 ## Action and budget contract
 

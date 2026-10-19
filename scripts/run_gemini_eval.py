@@ -3,26 +3,39 @@ from __future__ import annotations
 
 import argparse
 import getpass
+import hashlib
+import json
 import os
 from pathlib import Path
 
 from inquest.cli import main
+from inquest.agent_protocol import system_prompt
 
 
 def run():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--resume", action="store_true", help="Resume this same saved configuration")
     parser.add_argument("--policy", choices=("v1", "v2"), default="v1")
+    parser.add_argument("--suite", choices=("authored-v1", "authored-v2"), default="authored-v1")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
+    if args.suite == "authored-v2":
+        contract = json.loads((root / "datasets/authored-v2/manifest.json").read_text())["evaluation_contract"]
+        if args.policy != contract["policy"]:
+            parser.error("The fresh authored-v2 experiment requires --policy v2")
+        if hashlib.sha256(system_prompt(args.policy).encode()).hexdigest() != contract["prompt_sha256"]:
+            parser.error("Frozen v2 prompt changed; use a separately versioned experiment")
+    output_name = (f"gemini-3-5-authored-v2-budget5-policy-{args.policy}" if args.suite == "authored-v2"
+                   else {"v1": "gemini-3-5-authored-budget5-v1",
+                         "v2": "gemini-3-5-authored-budget5-policy-v2"}[args.policy])
     key = getpass.getpass("Paste Gemini API key, then press Enter: ").strip()
     if not key:
         parser.error("No API key entered")
     os.environ["GEMINI_API_KEY"] = key
-    print(f"Evaluating 16 incidents with policy {args.policy} at budget 5, with 15 seconds between API requests.", flush=True)
+    print(f"Evaluating 16 incidents from {args.suite} with policy {args.policy} at budget 5, with 15 seconds between API requests.", flush=True)
     print("Allow roughly 20–35 minutes. Each completed incident will print a status line.", flush=True)
     command = [
-        "run", "--suite", str(root / "datasets/authored-v1"), "--set", "holdout",
+        "run", "--suite", str(root / "datasets" / args.suite), "--set", "holdout",
         "--backend", "compatible", "--api-key-env", "GEMINI_API_KEY",
         "--base-url", "https://generativelanguage.googleapis.com/v1beta/openai",
         "--model", "gemini-3.5-flash-lite", "--omit-temperature",
@@ -30,8 +43,7 @@ def run():
         "--max-output-tokens", "2048", "--max-model-turns", "8",
         "--request-interval", "15", "--pause-on-rate-limit", "--progress", "--budgets", "5",
         "--policy", args.policy,
-        "--output", str(root / "runs" / ("gemini-3-5-authored-budget5-v1" if args.policy == "v1"
-                                        else "gemini-3-5-authored-budget5-policy-v2")),
+        "--output", str(root / "runs" / output_name),
     ]
     if args.resume:
         command.append("--resume")

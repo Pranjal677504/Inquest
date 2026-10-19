@@ -6,7 +6,7 @@
 
 Investigate an incident across eight services: follow dependencies, inspect metrics and logs, compare recent changes, and submit a diagnosis. The browser demo works without an API key. The Python toolkit exposes the same incident data through budgeted tools and grades reports against evaluator-held labels.
 
-**Status:** incident construction, the browser workbench, frozen loading, budgeted tools, and report grading work today. A recorded single-agent runner and offline heuristic are implemented. A fitted reasoner and actual LLM experiments are not yet published. This is an early evaluation toolkit, not a validated production benchmark.
+**Status:** incident construction, the browser workbench, frozen loading, budgeted tools, and report grading work today. The recorded single-agent runner supports versioned policies, offline paired comparisons, and resumable model evaluations. A fresh authored-v2 suite is prepared for the frozen V2 policy; no model results are included for that suite. A fitted reasoner remains future work. This is an early evaluation toolkit, not a validated production benchmark.
 
 ## What you can run
 
@@ -14,7 +14,7 @@ Investigate an incident across eight services: follow dependencies, inspect metr
 |---|---|---|
 | Browser workbench | Select a frozen or generated case; inspect telemetry; submit a diagnosis and reveal the answer | [App](app.py), [web tests](tests/test_web.py) |
 | Incident generator | Eight fault categories, one root cause, 120 minutes of telemetry, JSON serialization | [Generator](src/inquest/scenario.py), [example](examples/generate_incident.py) |
-| Frozen inputs | 120 smoke cases plus 16 separately authored cases, provenance manifests and SHA-256 verification | [Data guide](datasets/README.md), [loader tests](tests/test_frozen.py) |
+| Frozen inputs | 120 smoke cases plus two separately versioned 16-case authored suites, provenance manifests and SHA-256 verification | [Data guide](datasets/README.md), [loader tests](tests/test_frozen.py) |
 | Investigation environment | Eight read-only tools, charged attempts, observation IDs and detached transcripts | [Tool contract](docs/TOOLS.md), [environment tests](tests/test_env.py) |
 | Agent runner | Strict JSON actions, Ollama/compatible adapters, offline heuristic, durable runs, resume, replay and per-budget summaries | [Runner guide](docs/RUNNER.md), [runner tests](tests/test_runner.py), [HTTP tests](tests/test_backends.py) |
 | Report grader | Service, fault and fix checks; malformed-report handling; citation validation; Brier loss | [Grading contract](docs/GRADING.md), [grader tests](tests/test_grader.py) |
@@ -103,7 +103,8 @@ The browser is an unrestricted educational interface with answer reveal. Scored 
 - The small public smoke suite is for interface checks, not sufficient likelihood training or strong performance claims.
 - Gold tool/service relevance and fix action/target matches are coarse measures. Confidence scoring is implemented; calibration has not been demonstrated.
 - [`inquest-authored-v1`](datasets/authored-v1/README.md) adds 16 separately constructed causal cases with explicit definitions, distractors, missing logs, and evaluator explanations. They are AI-authored and self-reviewed; independent domain-expert review remains pending. Access them through the Python loader and example.
-- No fitted likelihood artifacts or real-model result table are published yet. The recorded offline heuristic is explicitly separate from model performance.
+- [`inquest-authored-v2`](datasets/authored-v2/README.md) adds 16 fresh mechanisms for the already-frozen V2 prompt, with five-call support/counterevidence paths and separate launcher outputs. The same author inspected earlier development results; this is not an independent or secret holdout. Report this suite separately.
+- No fitted likelihood artifacts are published. The recorded offline heuristic is explicitly separate from model performance.
 
 ## Research direction and related work
 
@@ -111,7 +112,7 @@ Replayability is established practice in incident benchmarks. [Cloud-OpsBench, O
 
 Inquest's proposed experiments ask whether **information-gain probe selection**, **confidence calibration**, and **success under equal investigation budgets** improve over simpler policies. Those are questions to test, not demonstrated advantages or claims of novelty. The [design notes](docs/DESIGN.md) explain the proposed belief model and its assumptions.
 
-Next priorities are independent review of the authored cases and an actual model pilot through the [runner](docs/RUNNER.md), saving transcripts, failures, and usage. These precede convenience CLI work; the full structured-agent comparison still depends on implementing and validating the reasoner. [Acceptance criteria and prerequisites](docs/ROADMAP.md) define what must exist before results can be claimed.
+Next priorities are independent review of the authored cases and evaluation of the frozen V2 policy on fresh cases through the [runner](docs/RUNNER.md), saving transcripts, failures, and usage. The full structured-agent comparison still depends on implementing and validating the reasoner. [Acceptance criteria and prerequisites](docs/ROADMAP.md) define what must exist before results can be claimed.
 
 ## Repository guide
 

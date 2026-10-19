@@ -245,7 +245,7 @@ def _validate_bundle(scenario):
     elif scenario.origin == "authored":
         if scenario.seed is not None or scenario.split != "holdout":
             raise ValueError("Authored scenarios require a null seed and holdout split")
-        if not isinstance(scenario.id, str) or not re.fullmatch(r"authored-v1-[0-9]{3}", scenario.id):
+        if not isinstance(scenario.id, str) or not re.fullmatch(r"authored-v[12]-[0-9]{3}", scenario.id):
             raise ValueError("Invalid authored scenario ID")
         if not isinstance(scenario.difficulty, str) or scenario.difficulty not in DIFFICULTY:
             raise ValueError("Authored difficulty must be easy, medium, or hard")

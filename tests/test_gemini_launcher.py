@@ -39,3 +39,34 @@ def test_empty_key_never_starts_a_model_request(monkeypatch):
     path = Path(__file__).resolve().parents[1] / "scripts/run_gemini_eval.py"
     with pytest.raises(SystemExit):
         runpy.run_path(str(path))["run"]()
+
+
+@pytest.mark.parametrize("resume", [False, True])
+def test_fresh_suite_uses_separate_output_and_frozen_policy(monkeypatch, resume):
+    captured = []
+    monkeypatch.setattr("getpass.getpass", lambda prompt: "synthetic-test-key")
+    monkeypatch.setattr("inquest.cli.main", lambda argv: captured.append(argv) or 0)
+    monkeypatch.setattr(sys, "argv", ["run_gemini_eval.py", "--suite", "authored-v2", "--policy", "v2"]
+                        + (["--resume"] if resume else []))
+    path = Path(__file__).resolve().parents[1] / "scripts/run_gemini_eval.py"
+    assert runpy.run_path(str(path))["run"]() == 0
+    args = captured[0]
+    assert Path(args[args.index("--suite") + 1]).name == "authored-v2"
+    assert Path(args[args.index("--output") + 1]).name == "gemini-3-5-authored-v2-budget5-policy-v2"
+    assert ("--resume" in args) == resume
+    assert "--pause-on-rate-limit" in args
+    assert "synthetic-test-key" not in repr(args)
+
+
+@pytest.mark.parametrize("changed_prompt", [False, True])
+def test_fresh_contract_rejected_before_key_prompt(monkeypatch, changed_prompt):
+    monkeypatch.setattr("getpass.getpass", lambda prompt: pytest.fail("Must validate before asking for a key"))
+    monkeypatch.setattr("inquest.cli.main", lambda argv: pytest.fail("Must not start a provider"))
+    if changed_prompt:
+        monkeypatch.setattr("inquest.agent_protocol.system_prompt", lambda policy: "changed")
+    monkeypatch.setattr(sys, "argv", ["run_gemini_eval.py", "--suite", "authored-v2", "--policy",
+                                     "v2" if changed_prompt else "v1"])
+    path = Path(__file__).resolve().parents[1] / "scripts/run_gemini_eval.py"
+    with pytest.raises(SystemExit) as exc:
+        runpy.run_path(str(path))["run"]()
+    assert exc.value.code == 2
