@@ -6,7 +6,8 @@ import json
 from pathlib import Path
 import sys
 
-from .backends import AlertHeuristic, BackendError, HTTPBackend
+from .backends import AlertHeuristic, BackendError, HTTPBackend, RunPaused
+from .agent_protocol import POLICIES
 from .runner import RunError, read_run_manifest, run_experiment, summarize
 
 
@@ -18,6 +19,7 @@ def parser():
     run.add_argument("--set", dest="set_name", required=True)
     run.add_argument("--backend", choices=("heuristic", "ollama", "compatible"), required=True)
     run.add_argument("--model")
+    run.add_argument("--policy", choices=POLICIES, default="v1")
     run.add_argument("--base-url")
     run.add_argument("--api-key-env", default="INQUEST_API_KEY")
     run.add_argument("--model-revision")
@@ -32,6 +34,8 @@ def parser():
     run.add_argument("--request-interval", type=float, default=0.0,
                      help="Minimum seconds between HTTP attempt starts, including retries (0–60)")
     run.add_argument("--progress", action="store_true", help="Print completed episode status to stderr")
+    run.add_argument("--pause-on-rate-limit", action="store_true",
+                     help="Pause on HTTP 429, preserving the current episode as unfinished")
     run.add_argument("--retries", type=int, default=2)
     run.add_argument("--json-mode", action="store_true")
     run.add_argument("--budgets", default="5,10,20")
@@ -48,6 +52,9 @@ def parser():
     replay.add_argument("--run-dir", type=Path, required=True)
     replay.add_argument("--job-id", required=True)
     replay.add_argument("--attempt", type=int)
+    compare = commands.add_parser("compare", help="Compare complete saved policy runs without API calls")
+    compare.add_argument("--baseline", type=Path, required=True)
+    compare.add_argument("--candidate", type=Path, required=True)
     return root
 
 
@@ -84,6 +91,9 @@ def main(argv=None):
             result = summarize(args.run_dir)
         elif args.command == "replay":
             result = replay(args)
+        elif args.command == "compare":
+            from .comparison import compare_runs
+            result = compare_runs(args.baseline, args.candidate)
         else:
             try:
                 budgets = tuple(int(value.strip()) for value in args.budgets.split(","))
@@ -103,6 +113,7 @@ def main(argv=None):
                     temperature=args.temperature, max_output_tokens=args.max_output_tokens,
                     token_limit_param=args.token_limit_param,
                     request_interval=args.request_interval,
+                    pause_on_rate_limit=args.pause_on_rate_limit,
                     timeout=args.timeout, retries=args.retries, json_mode=args.json_mode,
                 )
                 backend.preflight()
@@ -114,11 +125,15 @@ def main(argv=None):
                     f"{job['job_id']}: {result['status']}; accepted={result['score']['success']}",
                     file=sys.stderr, flush=True)) if args.progress else None,
                 episode_options={"max_model_turns": args.max_model_turns,
+                                 "policy": args.policy,
                                  "max_protocol_errors": args.max_protocol_errors,
                                  "max_prompt_chars": args.max_prompt_chars},
             )
         print(json.dumps(result, indent=2, sort_keys=True, allow_nan=False))
         return 0
+    except RunPaused as exc:
+        print(f"Paused: {exc.code}. Completed results are preserved. Resume with identical settings after quota recovers.", file=sys.stderr)
+        return 3
     except KeyboardInterrupt:
         print("Interrupted. Completed results are preserved; resume with identical settings.", file=sys.stderr)
         return 130

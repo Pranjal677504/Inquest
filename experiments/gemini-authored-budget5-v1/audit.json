@@ -1,0 +1,31 @@
+{
+  "original_archive_sha256": "a0ff9435ddd74e711e8aecc2a81a85eecc58395dcdff64a7b8f678f3513f4ba9",
+  "pacing_wait_seconds": 1259.1317355870851,
+  "paired": {
+    "baseline_only": [
+      "authored-v1-014",
+      "authored-v1-015"
+    ],
+    "both_failed": 4,
+    "both_successful": 9,
+    "gemini_only": [
+      "authored-v1-003"
+    ]
+  },
+  "policy": "v1",
+  "raw_artifact_publication": "Original full run retained privately; raw transcripts are not included in the public repository.",
+  "run_fingerprint": "33b45f62b11ccdb74b4727bc673cc00089e67f86a89881b77ab933cb7105bbcd",
+  "source": "User-executed Gemini run, supplied as an archive and independently replayed offline",
+  "source_revision": "79ca81b8ec8d6398559aa5a14096fa592e743bab",
+  "verification": {
+    "all_observations_and_scores_reproduced": true,
+    "all_request_histories_match": true,
+    "dataset_and_prompt_hashes_match": true,
+    "episodes_verified": 16,
+    "model_requests": 92,
+    "package_hashes_match_recorded_source_tree": true,
+    "protocol_errors": 9,
+    "summary_recomputed_exactly": true,
+    "tool_calls": 67
+  }
+}

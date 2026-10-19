@@ -29,6 +29,10 @@ class BackendError(Exception):
         self.code = code
 
 
+class RunPaused(BackendError):
+    """Provider quota requires a resumable stop, not a completed failed case."""
+
+
 @dataclass(frozen=True)
 class ModelReply:
     content: str
@@ -72,6 +76,7 @@ class HTTPBackend:
                  temperature: float | None = 0.0, max_output_tokens: int = 768,
                  token_limit_param: str = "max_completion_tokens",
                  request_interval: float = 0.0,
+                 pause_on_rate_limit: bool = False,
                  timeout: float = 60.0, retries: int = 2, json_mode: bool = False):
         if provider not in ("ollama", "compatible") or not isinstance(model, str) or not model.strip():
             raise ValueError("Choose ollama or compatible and an explicit model name")
@@ -89,6 +94,8 @@ class HTTPBackend:
             raise ValueError("Timeout must be in (0, 600]")
         if type(request_interval) not in (int, float) or not math.isfinite(request_interval) or not 0 <= request_interval <= 60:
             raise ValueError("Request interval must be in [0, 60] seconds")
+        if type(pause_on_rate_limit) is not bool:
+            raise ValueError("Pause on rate limit must be a boolean")
         self.provider, self.model = provider, model
         self.base_url = validate_endpoint(base_url)
         self.api_key_env = api_key_env
@@ -97,6 +104,7 @@ class HTTPBackend:
         self.temperature, self.max_output_tokens = temperature, max_output_tokens
         self.token_limit_param = token_limit_param
         self.request_interval = request_interval
+        self.pause_on_rate_limit = pause_on_rate_limit
         self._last_request_at = None
         self.timeout, self.retries, self.json_mode = timeout, retries, json_mode
         self._digest = None
@@ -123,6 +131,7 @@ class HTTPBackend:
             "temperature": self.temperature, "max_output_tokens": self.max_output_tokens,
             "token_limit_param": self.token_limit_param,
             "request_interval_seconds": self.request_interval,
+            "pause_on_rate_limit": self.pause_on_rate_limit,
             "timeout_seconds": self.timeout, "transport_retries": self.retries,
             "json_mode": self.json_mode,
         }
@@ -158,6 +167,8 @@ class HTTPBackend:
                 status = exc.code
                 exc.close()
                 emit("transport_result", {"attempt": attempt, "outcome": "http_error", "status": status})
+                if status == 429 and self.pause_on_rate_limit:
+                    raise RunPaused("provider_http_429")
                 retryable = status in (429, 500, 502, 503, 504)
                 code = f"provider_http_{status}"
             except (urllib.error.URLError, TimeoutError, OSError):

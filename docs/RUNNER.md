@@ -2,7 +2,7 @@
 
 The runner executes one JSON action at a time against the existing budgeted environment. It supports a transparent offline heuristic, a local Ollama model, and a hosted/local compatible chat-completions endpoint. Model backends receive public chat messages and observations only. The evaluator retains cases, labels, grading, IDs, and provenance.
 
-**Status:** the runner and provider contracts are tested. The included recorded experiment is an offline heuristic baseline. A user-executed, one-case Gemini 3.5 Flash-Lite pilot was subsequently reviewed from its supplied archive: all six request histories, four observations, and final grading reproduced locally without calling the provider. The pilot succeeded after one corrected protocol error. The full 16-case Gemini evaluation is still pending. Mock HTTP responses and scripted test replies are software tests, not model experiments.
+**Status:** the runner and provider contracts are tested. The included experiments contain an offline heuristic baseline and the summary/aggregate audit of a user-executed 16-case Gemini v1 run: 10/16 accepted, 10/16 with relevant evidence. All 92 request histories, 67 observations, and final scores reproduced offline from the privately supplied archive; raw Gemini transcripts remain private. See `experiments/gemini-authored-budget5-v1/README.md`. Policy v2 is implemented but has no live results yet. Mock HTTP responses and scripted test replies are software tests, not model experiments.
 
 ## Install and run without credentials
 
@@ -94,6 +94,38 @@ tar -czf runs/gemini-3-5-authored-budget5-v1.tar.gz -C runs gemini-3-5-authored-
 ```
 
 The general CLI options `--request-interval 15 --progress` work with other HTTP models too. Pacing covers retries and successive episodes within the same backend instance; separate processes do not share a limiter. It is recorded in the fingerprint and as `transport_wait` journal events. Episode latency includes pacing waits, so it cannot be directly compared with the unpaced pilot as inference latency. The default interval remains zero.
+
+### Free-tier-only policy comparison
+
+Use a Gemini project whose Free tier status you have verified. The launcher does not enable billing, provision infrastructure, change providers, or fall back to a paid model. An API key alone does not establish account billing status; these controls cannot make usage on a paid project free.
+
+Pull and install the committed source, then run only the v2 candidate:
+
+```bash
+python scripts/run_gemini_eval.py --policy v2
+```
+
+The private key prompt, model, budget 5, maximum 8 model turns, output limit, JSON mode, and 15-second pacing match the reference setup. The new output is `runs/gemini-3-5-authored-budget5-policy-v2`; the existing v1 directory is not overwritten. Both policies remain selectable with `--policy v1` or `--policy v2` on the general CLI. The v1 system prompt remains byte-identical. V2 is an experiment in guidance, not a hard guarantee that a model checks counterevidence or produces valid actions. The same strict parser and grader apply to both. Provider JSON mode is unchanged to keep the experiment focused on policy instructions; no unverified provider JSON-schema feature is silently enabled.
+
+The launcher now enables `--pause-on-rate-limit`. The first HTTP 429 pauses the entire run, writes a partial summary, and leaves the current episode unfinished instead of manufacturing a completed failure. Exit code 3 means paused. Once account quota recovers, resume without changing code or settings:
+
+```bash
+python scripts/run_gemini_eval.py --policy v2 --resume
+```
+
+An unfinished episode starts a new attempt with its original tool budget. The old attempt and all recorded usage remain included. Completed failures stay completed and are skipped. The general backend default retains bounded 429 retries unless this pause option is explicitly selected. No request runs outside the finite turn/retry limits; these are execution bounds, not a monetary spending limit or a guarantee of free quota.
+
+When both runs are complete, compare locally without an API key:
+
+```bash
+python -m inquest compare \
+  --baseline runs/gemini-3-5-authored-budget5-v1 \
+  --candidate runs/gemini-3-5-authored-budget5-policy-v2
+```
+
+Comparison requires identical cases, dataset hashes, protocol, budgets, episode limits, scoring-source hashes, model, and generation settings, with clean recorded source. It reports gains and regressions per case and difficulty, Brier values/missingness, and provider-reported usage. Operational differences such as the new quota-pause option are disclosed. It refuses incomplete runs rather than dropping unfinished cases. Historical v1 manifests without a named policy remain readable as v1; strict resume still rejects changed source/configuration. Historical model aliases/default sampling can vary over time, so a paired comparison does not prove a causal or statistically significant improvement.
+
+V2 was developed after reviewing the v1 failures. Treat this suite as development data. Preserve both full runs, including failures; freeze the next policy before creating fresh evaluation cases. Fresh-case validation and live v2 performance remain pending, and no success improvement is claimed from scripted tests.
 
 ## Action and budget contract
 

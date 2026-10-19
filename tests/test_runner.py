@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from inquest.agent_protocol import ProtocolError, parse_action
-from inquest.backends import BackendError, ModelReply
+from inquest.backends import BackendError, ModelReply, RunPaused
 from inquest.cli import main
 from inquest.frozen import load_frozen_set
 from inquest.runner import (EpisodeConfig, RunError, atomic_json, run_episode,
@@ -165,6 +165,34 @@ def test_completed_resume_skips_every_model_request(tmp_path, scenario):
     assert first == second
     assert second["groups"]["budget_1/all"]["success_rate"] == 1
     assert second["usage_all_attempts"]["model_requests"] == 2
+
+
+def test_quota_pause_preserves_unfinished_attempt_and_resumes_without_completed_failure(tmp_path, scenario):
+    with pytest.raises(RunPaused, match="provider_http_429"):
+        experiment(tmp_path, Scripted([RunPaused("provider_http_429")]))
+    output = tmp_path / "run"
+    summary = summarize(output)
+    assert summary["completed_episodes"] == 0
+    assert summary["groups"]["budget_1/all"]["success_rate"] is None
+    assert not (output / "episodes/case-0001-budget-001/result.json").exists()
+    journal = (output / "episodes/case-0001-budget-001/attempt-001.jsonl").read_text()
+    assert '"kind":"paused"' in journal and '"kind":"episode_finished"' not in journal
+    resumed = experiment(tmp_path, Scripted([tool(), report(scenario)]), resume=True)
+    assert resumed["completed_episodes"] == 1 and resumed["prior_attempts_preserved"] == 1
+    assert resumed["usage_all_attempts"]["model_requests"] == 3
+    assert resumed["groups"]["budget_1/all"]["successes"] == 1
+
+
+def test_cli_quota_pause_is_resumable_and_has_a_distinct_exit_status(tmp_path, monkeypatch, capsys):
+    backend = Scripted([RunPaused("provider_http_429")])
+    backend.preflight = lambda: None
+    monkeypatch.setattr("inquest.cli.HTTPBackend", lambda **kwargs: backend)
+    output = tmp_path / "paused-cli"
+    assert main(["run", "--suite", str(SUITE), "--set", "holdout", "--backend", "compatible",
+                 "--model", "fixture", "--base-url", "http://localhost:1234/v1", "--pause-on-rate-limit",
+                 "--budgets", "5", "--case-limit", "1", "--output", str(output), "--allow-dirty"]) == 3
+    assert "Paused: provider_http_429" in capsys.readouterr().err
+    assert summarize(output)["groups"]["budget_5/all"]["unfinished"] == 1
 
 
 def test_failed_completed_episode_stays_in_denominator_and_is_not_retried(tmp_path):

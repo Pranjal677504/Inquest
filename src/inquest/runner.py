@@ -16,8 +16,8 @@ import subprocess
 import tempfile
 import time
 
-from .agent_protocol import PROTOCOL_VERSION, ProtocolError, parse_action, strict_json, system_prompt
-from .backends import Backend, BackendError
+from .agent_protocol import POLICIES, PROTOCOL_VERSION, ProtocolError, parse_action, strict_json, system_prompt
+from .backends import Backend, BackendError, RunPaused
 from .env import InvestigationEnv
 from .frozen import load_frozen_set
 from .grader import grade
@@ -36,12 +36,15 @@ class EpisodeConfig:
     max_protocol_errors: int = 2
     max_prompt_chars: int = 100_000
     max_lines: int = 20
+    policy: str = "v1"
 
     def __post_init__(self):
         for name in ("max_steps", "max_model_turns", "max_protocol_errors", "max_prompt_chars", "max_lines"):
             value = getattr(self, name)
             if type(value) is not int or value < (0 if name == "max_steps" else 1):
                 raise ValueError(f"Invalid {name}")
+        if self.policy not in POLICIES:
+            raise ValueError("Unknown investigation policy")
 
 
 def canonical(value):
@@ -106,7 +109,7 @@ class Journal:
 def run_episode(scenario, backend: Backend, config: EpisodeConfig, emit):
     """Only detached public messages reach the backend; grading stays evaluator-side."""
     env = InvestigationEnv(scenario, max_steps=config.max_steps, max_lines=config.max_lines)
-    messages = [{"role": "system", "content": system_prompt()},
+    messages = [{"role": "system", "content": system_prompt(config.policy)},
                 {"role": "user", "content": canonical({"kind": "start", "steps_left": env.steps_left})}]
     is_model = backend.identity()["is_model"]
     usage = {"input_tokens_known": 0, "output_tokens_known": 0,
@@ -136,6 +139,9 @@ def run_episode(scenario, backend: Backend, config: EpisodeConfig, emit):
                 usage["output_usage_missing_calls"] += 1
             try:
                 reply = backend.complete(deepcopy(messages), record)
+            except RunPaused as exc:
+                record("paused", {"turn": turn, "code": exc.code, "steps": env.steps, "usage": usage})
+                raise
             except BackendError as exc:
                 status, error_code = "backend_error", exc.code
                 record("backend_error", {"turn": turn, "code": exc.code})
@@ -158,7 +164,11 @@ def run_episode(scenario, backend: Backend, config: EpisodeConfig, emit):
                     break
                 messages.append({"role": "user", "content": canonical({
                     "kind": "protocol_error", "error": str(exc), "steps_left": env.steps_left,
-                    "instruction": "Return one valid JSON tool action or final report envelope.",
+                    "instruction": ("Return one valid JSON tool action or final report envelope."
+                                    if config.policy == "v1" else
+                                    'Return one valid envelope. Put every tool argument inside args, e.g. '
+                                    '{"kind":"tool","tool":"get_alerts","args":{}}. '
+                                    'For a report use {"kind":"report","report":{...}}. No extra fields.'),
                 })})
                 continue
             if action["kind"] == "report":
@@ -373,7 +383,7 @@ def run_experiment(*, suite: str | Path, set_name: str, backend: Backend,
     del shared_options["max_steps"]
     config = {"protocol": PROTOCOL_VERSION, "backend": backend.identity(), "budgets": list(budgets),
               "episode_options": shared_options, "code": code,
-              "prompt_sha256": sha256(system_prompt().encode()),
+              "prompt_sha256": sha256(system_prompt(shared_options["policy"]).encode()),
               "suite": {"suite_id": data_manifest["suite_id"], "set_name": set_name,
                         "manifest_sha256": sha256((suite / "manifest.json").read_bytes()),
                         "catalog_sha256": sha256((suite / "SHA256SUMS").read_bytes()),
@@ -427,7 +437,7 @@ def run_experiment(*, suite: str | Path, set_name: str, backend: Backend,
                 atomic_json(output / "summary.json", summarize(output))
                 if progress is not None:
                     progress(dict(job), deepcopy(result))
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, RunPaused):
             atomic_json(output / "summary.json", summarize(output))
             raise
         summary = summarize(output)

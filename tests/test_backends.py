@@ -8,7 +8,7 @@ import urllib.error
 
 import pytest
 
-from inquest.backends import BackendError, HTTPBackend, validate_endpoint
+from inquest.backends import BackendError, HTTPBackend, RunPaused, validate_endpoint
 
 
 @contextmanager
@@ -144,6 +144,17 @@ def test_retryable_status_is_bounded_and_recorded(monkeypatch):
     assert len(requests) == 2
     assert [e["attempt"] for e in events if e["kind"] == "transport_attempt"] == [1, 2]
     assert any(e.get("status") == 429 for e in events)
+
+
+def test_opt_in_quota_pause_stops_at_first_429_without_retrying_or_exposing_body():
+    events = []
+    with server([(429, {"error": "SENSITIVE_PROVIDER_DETAIL"})]) as (base, requests):
+        backend = adapter(base, pause_on_rate_limit=True, retries=5)
+        with pytest.raises(RunPaused, match="provider_http_429") as error:
+            backend.complete([], lambda k, b: events.append({"kind": k, **b}))
+    assert len(requests) == 1
+    assert "SENSITIVE_PROVIDER_DETAIL" not in str(error.value) + json.dumps(events)
+    assert backend.identity()["pause_on_rate_limit"] is True
 
 
 @pytest.mark.parametrize("retry", [False, True])
