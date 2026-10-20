@@ -1,0 +1,56 @@
+.execution-form {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr .8fr auto;
+  gap: 16px;
+  align-items: end;
+  grid-column: 1 / -1;
+}
+.execution-form label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.execution-form select {
+  padding: 10px;
+  width: 100%;
+  background: white;
+  border: 1px solid #b8cac2;
+  border-radius: 5px;
+  min-height: 42px;
+}
+.execution-form button.primary {
+  background: #203e34;
+  color: white;
+  min-height: 42px;
+}
+button:disabled { opacity: .55; cursor: wait; }
+.execution-note { grid-column: 1 / -1; margin-bottom: 0; }
+.job-bar, .job-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.job-bar { justify-content: space-between; margin: 20px 0; }
+.job-bar p { color: var(--muted); font-size: 13px; }
+#job-list { display: grid; gap: 8px; }
+#job-detail {
+  min-width: 0;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 25px;
+}
+.job-actions { margin: 18px 0; }
+.job-actions a { background: #203e34; color: white; }
+.job-progress { width: 100%; height: 12px; accent-color: #305c4a; }
+.live-report { overflow-wrap: anywhere; }
+.review-grid { margin-bottom: 35px; }
+@media(max-width:900px) {
+  .execution-form { grid-template-columns: 1fr 1fr; }
+}
+@media(max-width:650px) {
+  .execution-form { grid-template-columns: 1fr; }
+  #job-detail { padding: 17px; }
+}

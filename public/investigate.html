@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inquest — Local investigations</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/runs.css">
+  <link rel="stylesheet" href="/assets/investigate.css">
+  <script src="/assets/investigate.js" defer></script>
+</head>
+<body>
+  <header class="masthead"><a class="wordmark" href="/">INQUEST<span>.</span></a><nav aria-label="Main"><a href="/investigate" aria-current="page">Local investigations</a><a href="/runs">Saved investigations</a></nav><span class="private-label">OFFLINE HEURISTIC · NO API KEY</span></header>
+  <main>
+    <section class="hero"><p class="eyebrow">LOCAL EXECUTION / 01</p><h1>Start with a question.</h1><p>Choose a synthetic incident. Follow the tool calls, inspect the evidence, and review the saved diagnosis.</p></section>
+    <div id="execution-error" class="notice error" role="alert" hidden></div>
+    <section class="import-panel" aria-label="New investigation">
+      <form id="investigation-form" class="execution-form">
+        <div><label for="suite">Case suite</label><select id="suite" disabled></select></div>
+        <div><label for="case">Incident</label><select id="case" disabled></select></div>
+        <div><label for="budget">Tool budget</label><select id="budget" disabled><option value="5">5 calls</option><option value="10">10 calls</option><option value="20">20 calls</option></select></div>
+        <button class="primary" id="start" type="submit" disabled>Start investigation</button>
+      </form>
+      <p class="muted execution-note">This is the built-in deterministic heuristic, not an LLM. It can produce incorrect diagnoses. Runs use read-only tools, stay on this computer, and are saved with the existing runner format. No repair is executed.</p>
+    </section>
+    <div class="job-bar"><p id="connection-status" role="status" aria-live="polite">Connecting to local worker…</p><button id="refresh-jobs" type="button">Refresh jobs</button></div>
+    <div class="review-grid">
+      <aside class="episodes" aria-label="Saved local jobs"><h2>Investigations</h2><p class="muted">Jobs survive page reloads. Interrupted work requires an explicit resume.</p><div id="job-list"></div></aside>
+      <section id="job-detail" aria-label="Investigation progress" tabindex="-1"><p>Select or start an investigation.</p></section>
+    </div>
+    <footer>One local worker · Eight active jobs maximum · Read-only tools · Offline execution</footer>
+  </main>
+</body>
+</html>

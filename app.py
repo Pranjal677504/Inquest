@@ -7,9 +7,10 @@ This is an educational demo, not the budgeted benchmark environment on the roadm
 from __future__ import annotations
 
 import sys
+import json
 from pathlib import Path
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Blueprint, Flask, current_app, jsonify, make_response, request, send_from_directory
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
@@ -19,7 +20,7 @@ from inquest.frozen import load_frozen_set  # noqa: E402
 from inquest.scenario import DIFFICULTY, FAULTS, FIX_ACTIONS, SPLITS  # noqa: E402
 from inquest.topology import EDGES, SERVICES  # noqa: E402
 
-app = Flask(__name__, static_folder=None)
+workbench = Blueprint("workbench", __name__)
 FROZEN_DIR = ROOT / "datasets" / "smoke-v1"
 MAX_SEED = 1_000_000
 
@@ -57,19 +58,34 @@ def _summary(scenario):
         "health": scenario.health,
     }
 
-@app.get("/")
+@workbench.get("/")
 def index():
+    if current_app.config.get("LOCAL_RUN_FILES"):
+        html = (ROOT / "public" / "index.html").read_text()
+        html = html.replace('<a class="intro" href="/runs">',
+                            '<a class="intro" href="/investigate">Start local investigation ↗</a><a class="intro" href="/runs">')
+        return make_response(html)
     return send_from_directory(ROOT / "public", "index.html")
 
 
-@app.get("/assets/<path:name>")
+@workbench.get("/assets/<path:name>")
 def assets(name):
     return send_from_directory(ROOT / "public" / "assets", name)
 
 
-@app.get("/runs")
+@workbench.get("/runs")
 def saved_runs():
-    response = send_from_directory(ROOT / "public", "runs.html")
+    loader = current_app.config.get("LOCAL_RUN_FILES")
+    if loader and request.args.get("job"):
+        # JSON is inert data, escaped against closing tags. The viewer still has
+        # connect-src 'none' and never needs to fetch private artifacts itself.
+        payload = json.dumps(loader(request.args["job"]), ensure_ascii=True).replace("<", "\\u003c")
+        html = (ROOT / "public" / "runs.html").read_text().replace(
+            "</body>", f'<script type="application/json" id="local-run-files">{payload}</script></body>')
+        response = make_response(html)
+        response.headers["Cache-Control"] = "no-store"
+    else:
+        response = send_from_directory(ROOT / "public", "runs.html")
     response.headers["Content-Security-Policy"] = (
         "default-src 'none'; script-src 'self'; style-src 'self'; "
         "connect-src 'none'; base-uri 'none'; object-src 'none'; "
@@ -78,7 +94,7 @@ def saved_runs():
     return response
 
 
-@app.get("/api/config")
+@workbench.get("/api/config")
 def config():
     return jsonify({
         "splits": list(SPLITS),
@@ -90,7 +106,7 @@ def config():
     })
 
 
-@app.post("/api/incident")
+@workbench.post("/api/incident")
 def incident():
     try:
         scenario, selection = _selection(request.get_json(silent=True))
@@ -101,7 +117,7 @@ def incident():
     return jsonify(response)
 
 
-@app.post("/api/diagnosis")
+@workbench.post("/api/diagnosis")
 def diagnosis():
     payload = request.get_json(silent=True)
     try:
@@ -128,9 +144,18 @@ def diagnosis():
     })
 
 
-@app.get("/api/health")
+@workbench.get("/api/health")
 def api_health():
     return jsonify({"status": "ok"})
+
+
+def create_app():
+    application = Flask(__name__, static_folder=None)
+    application.register_blueprint(workbench)
+    return application
+
+
+app = create_app()
 
 
 if __name__ == "__main__":

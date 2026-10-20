@@ -1,6 +1,6 @@
 # Project progress
 
-Updated 2026-10-19. This page consolidates implementation status and the workflow for privately reviewed maintainer-supplied runs. The reviewed code snapshot is `193c5d0821fa7229645ebf080bea264ad2f44812`. This documentation update is prepared locally for maintainer review and application through VS Code; no GitHub operation is part of this update.
+Updated 2026-10-20. This page consolidates implementation status and the workflow for privately reviewed maintainer-supplied runs. The saved-run viewer baseline was merged by the maintainer at `5e4edda3e4415cbfad7e65c43d9a8509844ae639` (PR #6). The subsequent local-execution update is prepared as a patch for maintainer review and application through VS Code; the assistant performs no GitHub mutation.
 
 ## Product goal
 
@@ -12,6 +12,7 @@ Deliver an evidence-backed investigation workbench for replayed synthetic micros
 |---|---|
 | Browser workbench | Telemetry browsing, diagnosis submission, stale-response protection, keyboard tabs, and browser regression coverage |
 | Saved-run viewer | Local folder/file import, exact-attempt tool timeline, citation links, reports, errors, unfinished jobs and saved comparison artifacts; no upload or model calls |
+| Local execution | Opt-in loopback service; one offline worker, durable SQLite jobs, selected cases/budgets, idempotent start, cancellation, restart recovery and direct saved-result review |
 | Frozen inputs | 120 smoke cases plus two separate 16-case authored suites; 18 canonical checksums |
 | Investigation tools | Eight read-only tools, charged attempts, sequential observation IDs, detached telemetry |
 | Report grading | Structural/reference validation, diagnosis and repair checks, coarse evidence relevance, Brier loss and missingness |
@@ -21,9 +22,11 @@ Deliver an evidence-backed investigation workbench for replayed synthetic micros
 | Comparison | Offline paired results with compatible cases, scoring sources, limits, model settings, gains, regressions and usage |
 | Policies | V1 and V2 prompt bytes preserved; V3 remains an experimental guidance candidate |
 
-The V3 implementation passed **453 Python tests locally**. Previous published checkpoints passed the Python 3.10–3.14 matrix and Chromium. The V3 remote CI result has not been verified in this documentation review; check the current PR checks through VS Code/GitHub. Scripted tests verify software behavior and reachability, not autonomous model accuracy.
+The V3 implementation passed **453 Python tests locally**. The subsequent merged saved-run viewer passed the six-job Python 3.10–3.14 and Chromium PR matrix. Scripted tests verify software behavior and reachability, not autonomous model accuracy.
 
-The subsequent saved-run viewer update passed **454 Python tests and 12 Chromium workflows locally** on Linux/Python 3.12 with Playwright 1.55. Desktop and mobile layouts were inspected. Four maintainer-supplied saved-run folders opened successfully and all 64 episodes were inspected without network requests; no private run content is bundled with the viewer. This patch has not been published by the assistant. [Viewer usage](SAVED_RUNS.md) covers local startup and import limits.
+The saved-run viewer update passed **454 Python tests and 12 Chromium workflows locally** on Linux/Python 3.12 with Playwright 1.55. Desktop and mobile layouts were inspected. Four maintainer-supplied saved-run folders opened successfully and all 64 episodes were inspected without network requests; no private run content is bundled with the viewer. The maintainer merged it through VS Code as PR #6. [Viewer usage](SAVED_RUNS.md) covers local startup and import limits.
+
+The local-execution update passed **473 Python tests and 17 Chromium workflows locally** on Linux/Python 3.12 with Playwright 1.55. The actual launch script completed a browser-created offline job, retained it after restart and opened its saved result. Cancellation/recovery, completed-result reuse, lost-response deduplication, shutdown, identity restrictions and default hosted-route isolation are tested. Local browser execution is not a live model result. Its PR/CI verification remains for the maintainer's VS Code workflow. See [Local execution](LOCAL_EXECUTION.md).
 
 ## Evaluation records and review status
 
@@ -55,10 +58,10 @@ Both authored suites informed V3 development. They are development data for V3. 
 ## Next product milestone
 
 1. Keep V2 as the working evaluation baseline and retain V3 as a recorded experiment. Keep the current launcher default documented separately: it remains V1, not V2.
-2. The browser saved-run viewer is implemented locally: tool timeline, actual evidence citations, final report, validation errors and provider errors. Apply and review the patch through VS Code; reading a completed run requires no model request.
-3. Connect local investigation execution to the workbench with visible job state and finite limits. Preserve read-only tool access and the existing journal format.
+2. The browser saved-run viewer is merged: tool timeline, actual evidence citations, final report, validation errors and provider errors. Reading a completed run requires no model request.
+3. Local execution is implemented in the prepared patch, using the offline heuristic and existing runner artifacts. Validate and publish it through VS Code. Hosted/model execution from the browser remains a separate future capability.
 4. The viewer can display saved CLI comparison artifacts with counts, per-case outcomes, usage and limitations. Direct selection and verified pairing of two folders inside the browser remain future work; compatibility validation stays in the CLI.
-5. Prepare a reproducible walkthrough and release checklist. Independent case review, claim-level evidence validation, topology variation, a fitted reasoner and calibration remain separate research work.
+5. Prepare a reproducible walkthrough and release checklist, then prioritize claim-level evidence support and independently reviewed assessment/topology variation. A fitted reasoner and calibration remain separate research work.
 
 No further live model run is required for this offline product work. Future experiments should preserve all outcomes, distinguish provider failures from diagnosis failures, and state whether their cases informed development.
 

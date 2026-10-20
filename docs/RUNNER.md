@@ -8,6 +8,8 @@ Policy v3 is available as an opt-in development candidate. Its guidance, limitat
 
 ## Install and run without credentials
 
+For browser execution without credentials, use the separate opt-in command `python scripts/serve_local.py`. It executes one selected authored case through this runner using the offline heuristic, durable local job state and bounded budgets. [Local execution](LOCAL_EXECUTION.md) documents cancellation, exact resume requirements and saved-result review. It does not enable a hosted model or alter the existing CLI defaults.
+
 To inspect an existing run visually, start `python app.py`, open <http://127.0.0.1:8000/runs>, and select its folder. [The saved-run viewer](SAVED_RUNS.md) shows observations, citations, reports and execution errors locally without an API request. It also displays JSON exported by `inquest compare`; compatibility checks remain the CLI's responsibility.
 
 ```bash
