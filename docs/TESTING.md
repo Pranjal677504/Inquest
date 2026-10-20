@@ -31,6 +31,14 @@ These are application correctness checks. Handcrafted diagnoses and assertions a
 
 `browser_tests/test_saved_runs.py` uses invented local run artifacts to exercise folder and incremental file imports, keyboard citation navigation, escaped untrusted text, backend failures with absent reports, unfinished episodes, missing/exact-attempt journals, mismatched identities, truncated journals, comparison rendering, mobile width, clearing and delayed import races. Every viewer test fails on JavaScript errors, post-load network requests, or nonempty browser storage. The web test checks the `/runs` route and its network-blocking Content Security Policy. These are viewer correctness checks, not model results or a cryptographic artifact audit.
 
+## Local browser execution
+
+`tests/test_local_jobs.py` exercises actual single-case runner selection, durable event ordering, invalid selections, concurrent start deduplication, queue limits, lifetime ownership, queued/running cancellation, preserved attempts, explicit resume, restart recovery, completed-result reuse, changed-source rejection, background consumption, graceful shutdown, incomplete-header recovery, model-backend rejection and the shutdown mutation boundary. HTTP fixtures check local/hosted route separation, loopback/Host/Origin/token restrictions, bounded inputs and escaped saved-file handoff.
+
+`browser_tests/test_local_execution.py` follows the browser → local HTTP API → SQLite worker → durable journal/result → saved viewer flow. Checks include live observations with controlled execution gates, cancellation/resume, page reload, HTTP server restart and token reconnection, lost start responses with idempotent retry, execution failures and mobile width. Requests must stay on the loopback origin, browser storage stays empty, and JavaScript errors fail the tests. Gates and scripted failures verify lifecycle behavior, not model accuracy.
+
+The local-execution snapshot passed 473 Python tests and 17 Chromium workflows locally on Linux/Python 3.12, Playwright 1.55. The actual launch script was checked separately with a background worker, browser-created investigation, restart persistence and direct saved-run review. Hosted CI must run on the maintainer's PR before merge. No live model call is part of these checks.
+
 ## Authored causal fixtures
 
 `tests/test_authored.py` exercises every case’s support and counterevidence probes through the tools, grading compatibility, metadata isolation, malformed identity rejection, checksums, casebook binding, generator independence, source-to-data reproduction, and overwrite protection. Legacy smoke serialization is checked against all 120 original records. Verify the four additional canonical hashes from `datasets/authored-v1` with `sha256sum -c SHA256SUMS`.

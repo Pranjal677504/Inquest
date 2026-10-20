@@ -4,6 +4,8 @@ The saved-run viewer opens existing runner artifacts locally in the browser. It 
 
 ## Start and open a run
 
+For a newly executed local job, [start the opt-in local server](LOCAL_EXECUTION.md) and select **Open saved result** after starting an investigation. The server embeds that managed run's saved files into the viewer response, so no folder picker is required. The viewer itself still performs no network request. The folder workflow below remains available in both app modes.
+
 From the repository with your virtual environment activated:
 
 ```bash

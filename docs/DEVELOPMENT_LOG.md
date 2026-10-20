@@ -168,6 +168,16 @@ The viewer uses local assets and system fonts, no browser storage and a network-
 
 Verification passed 454 Python tests and 12 Chromium workflows locally on Linux/Python 3.12 using Playwright 1.55. Invented test files cover failures, partial runs, escaped text, exact attempts, malformed imports, keyboard citations, mobile layout, comparison display and clear/import races. Desktop/mobile renders were inspected; all 64 episodes across four private maintainer folders opened without post-load network traffic. Their contents and performance aggregates remain outside this code patch. Local execution controls and interactive validated pairing of two folders remain later work. See [Saved runs](SAVED_RUNS.md).
 
-## Reading the log
+## 2026-10-20 — Durable local browser execution
+
+Prepared an opt-in loopback application that launches one selected authored case through the existing runner using only the offline heuristic. A single worker, SQLite transactions, a lifetime store lock, idempotent start keys and bounded jobs coordinate execution. Browser controls show tool calls and budgets, cancellation, explicit resume and direct saved-run review. Restart marks incomplete/queued work interrupted; completed artifacts are reused instead of executed again. Earlier journals remain intact. Empty unstarted header directories are preserved before recovery; inconsistent saved data is rejected.
+
+Extended `run_experiment` with optional explicit case selection and a detached event hook after durable journal writes. Existing CLI defaults and the episode loop, prompts, tools, grader and frozen bytes are preserved. The worker source hash is recorded in backend identity for strict resume. No model request or new runtime dependency was introduced. The normal hosted app starts no worker and exposes no execution API. Local routes enforce loopback/Host/Origin/token checks, input bounds, cache isolation and escaped inert saved-file handoff.
+
+Verification passed 473 Python tests and 17 Chromium workflows locally on Linux/Python 3.12 with Playwright 1.55. Coverage includes concurrent deduplication, queue ownership, cancellation, preserved attempts, recovery after artifact completion, source mismatch, shutdown boundaries, partial headers, HTTP restrictions, lost responses, browser reload/restart, error display, citation handoff and mobile layout. The actual startup command completed a browser-created job, retained it after restart, and opened the saved viewer without external requests. These are lifecycle/software checks, not LLM performance results. See [Local execution](LOCAL_EXECUTION.md).
+
+The maintainer alone handles commits, pushes, PR creation and merging through VS Code. This change is delivered as an incremental patch against the merged saved-run viewer; no GitHub write is performed by the assistant. Browser model integration, claim-level support, independent review, topology variation and a reproducible release remain later work.
+
+## Reading the dated entries
 
 Entries use the date on which work occurred. Multiple changes on one day appear together. Each entry identifies the affected milestone, origin of integrated components, verification evidence, limitations, and next planned capability.

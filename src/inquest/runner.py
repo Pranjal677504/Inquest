@@ -361,11 +361,19 @@ def summarize(directory: str | Path):
 def run_experiment(*, suite: str | Path, set_name: str, backend: Backend,
                    budgets: tuple[int, ...], output: str | Path, case_limit: int | None = None,
                    episode_options: dict | None = None, resume: bool = False,
-                   allow_dirty: bool = False, progress=None):
+                   allow_dirty: bool = False, progress=None,
+                   case_ids: tuple[str, ...] | None = None, event_hook=None):
     suite, output = Path(suite), Path(output)
     if not budgets or len(set(budgets)) != len(budgets) or any(type(b) is not int or b < 1 for b in budgets):
         raise RunError("Budgets must be distinct positive integers")
     cases = load_frozen_set(suite, set_name)
+    if case_ids is not None:
+        if (not isinstance(case_ids, tuple) or not case_ids or
+                any(not isinstance(case_id, str) for case_id in case_ids) or
+                len(set(case_ids)) != len(case_ids) or case_limit is not None or
+                not set(case_ids).issubset({case.id for case in cases})):
+            raise RunError("Select distinct known case IDs without case_limit")
+        cases = [case for case in cases if case.id in case_ids]
     if case_limit is not None:
         if type(case_limit) is not int or not 1 <= case_limit <= len(cases):
             raise RunError("Case limit must be within the selected set")
@@ -426,10 +434,14 @@ def run_experiment(*, suite: str | Path, set_name: str, backend: Backend,
                         raise RunError("Unexpected attempt filename") from None
                 attempt = max(numbers, default=0) + 1
                 journal = Journal(directory / f"attempt-{attempt:03d}.jsonl")
+                def emit(kind, body):
+                    journal.emit(kind, body)
+                    if event_hook is not None:
+                        event_hook(dict(job), kind, deepcopy(body))
                 try:
                     journal.emit("episode_started", {**job, "attempt": attempt, "fingerprint": fingerprint})
                     result = run_episode(by_id[job["case_id"]], backend,
-                                         EpisodeConfig(max_steps=job["max_steps"], **options), journal.emit)
+                                         EpisodeConfig(max_steps=job["max_steps"], **options), emit)
                     atomic_json(directory / "result.json", {**job, **result, "attempt": attempt,
                                                             "fingerprint": fingerprint})
                 finally:

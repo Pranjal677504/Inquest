@@ -336,4 +336,19 @@
       $('comparison-error').textContent = error.message; $('comparison-error').hidden = false;
     }
   });
+  const embedded = $('local-run-files');
+  if (embedded) {
+    try {
+      const files = parse(embedded.textContent, 'Local run');
+      require(Array.isArray(files) && files.length <= 5000, 'Invalid local run file list.');
+      importFiles(files.map(file => {
+        require(object(file) && typeof file.path === 'string' && typeof file.content === 'string', 'Invalid local run file.');
+        return {name: file.path.split('/').pop(), webkitRelativePath: file.path,
+          size: new Blob([file.content]).size, text: async () => file.content};
+      }), false);
+    } catch (error) {
+      $('import-error').textContent = error.message; $('import-error').hidden = false;
+    }
+    embedded.remove();
+  }
 })();

@@ -16,6 +16,7 @@ Investigate an incident across eight services: follow dependencies, inspect metr
 |---|---|---|
 | Browser workbench | Select a frozen or generated case; inspect telemetry; submit a diagnosis and reveal the answer | [App](app.py), [web tests](tests/test_web.py) |
 | Saved-run viewer | Open local run folders; inspect exact-attempt observations, citations, reports, errors, and saved comparisons without model calls or uploads | [Viewer guide](docs/SAVED_RUNS.md), [browser tests](browser_tests/test_saved_runs.py) |
+| Local browser execution | Start one offline investigation, inspect progress and budgets, cancel/resume, recover jobs and open saved results | [Local execution guide](docs/LOCAL_EXECUTION.md), [lifecycle tests](tests/test_local_jobs.py) |
 | Incident generator | Eight fault categories, one root cause, 120 minutes of telemetry, JSON serialization | [Generator](src/inquest/scenario.py), [example](examples/generate_incident.py) |
 | Frozen inputs | 120 smoke cases plus two separately versioned 16-case authored suites, provenance manifests and SHA-256 verification | [Data guide](datasets/README.md), [loader tests](tests/test_frozen.py) |
 | Investigation environment | Eight read-only tools, charged attempts, observation IDs and detached transcripts | [Tool contract](docs/TOOLS.md), [environment tests](tests/test_env.py) |
@@ -41,6 +42,8 @@ Open `http://127.0.0.1:8000`. On Windows, use `py -3.14 -m venv .venv` and `.ven
 
 For saved investigations, open `http://127.0.0.1:8000/runs` and choose a single run folder containing `run.json` and `episodes/`. Files stay in the browser tab; no API key or model request is needed. See [saved-run review](docs/SAVED_RUNS.md).
 
+To **start investigations from the browser**, stop the previous server and run `python scripts/serve_local.py`, then open `http://127.0.0.1:8000/investigate`. This opt-in local service uses the free offline heuristic, durable SQLite job state, cancellation/recovery, and the existing saved-run viewer. Execution endpoints are absent from the public app. See [local execution](docs/LOCAL_EXECUTION.md).
+
 For the Python examples and tests:
 
 ```bash
@@ -54,7 +57,7 @@ python -m pytest -q
 
 For Chromium workflow checks and their separate optional dependencies, see [Testing](docs/TESTING.md). These cover case switching, diagnosis, request failures, and keyboard navigation through the real Flask API.
 
-**Dependencies:** the generator, loader, tools, and grader use the Python standard library. Installing the distribution also installs **Flask**, which runs the bundled web application. Tests use pytest. The browser and offline heuristic require no model, provider key, or database. Hosted model runs need a configured provider; local model runs need a model server and suitable compute.
+**Dependencies:** the generator, loader, tools, and grader use the Python standard library. Installing the distribution also installs **Flask**, which runs the bundled web application. Tests use pytest. The browser workbench and offline heuristic require no model or provider key. Local browser execution uses Python's bundled SQLite, with no database server. Hosted model runs need a configured provider; local model runs need a model server and suitable compute.
 
 **Python support:** Python **3.10–3.14** passed installation, all **243 tests**, all four examples, and ten frozen checksum checks on Linux in [this verified CI run](https://github.com/Pranjal677504/Inquest/actions/runs/37794556651). That run covers the earlier smoke-only implementation. The runner update passed **371 Python tests and six browser workflow tests locally on Linux/Python 3.12.14**; its hosted CI result is pending publication. Package metadata targets 3.10+; newer versions and Windows execution are not covered by that result. [CI](https://github.com/Pranjal677504/Inquest/actions/workflows/tests.yml) checks each pull request and `main` update. The hosted demo selects Python 3.14 in [`.python-version`](.python-version).
 
