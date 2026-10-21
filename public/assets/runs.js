@@ -140,7 +140,7 @@
     const {manifest, entries, name} = current;
     $('run-review').hidden = false;
     $('run-title').textContent = name;
-    $('run-policy').textContent = `Policy ${display(manifest.config.episode_options?.policy)}`;
+    $('run-policy').textContent = `Policy ${display(manifest.config.episode_options?.policy ?? manifest.config.backend?.policy)}`;
     $('run-meta').replaceChildren();
     const backend = manifest.config.backend || {}, suite = manifest.config.suite || {};
     $('run-meta').append(node('div', `${display(suite.suite_id)} / ${display(suite.set_name)} · ${display(backend.requested_model || backend.kind)}`),
@@ -258,7 +258,7 @@
     if (!errors.length) target.append(node('p', 'No execution errors in the imported journal.', 'muted'));
     for (const event of errors) raw(target, `${event.kind} · event ${display(event.seq)}`, event);
   }
-  async function importFiles(files, append) {
+  async function importFiles(files, append, sample = false) {
     const version = ++generation;
     $('import-error').hidden = true;
     $('import-status').textContent = 'Reading local files…';
@@ -268,12 +268,25 @@
       if (version !== generation) return;
       current = run; sourceFiles = sources; selected = null; $('episode-filter').value = 'all';
       renderRun();
-      $('import-status').textContent = `Opened ${run.entries.length} planned episodes. No files uploaded.`;
+      $('sample-context').hidden = !sample;
+      $('import-status').textContent = sample ?
+        `Opened ${run.entries.length} public sample episodes. No files uploaded.` :
+        `Opened ${run.entries.length} planned episodes. No files uploaded.`;
+      if (sample) $('run-review').scrollIntoView({block: 'start'});
     } catch (error) {
       if (version !== generation) return;
       $('import-error').textContent = error.message; $('import-error').hidden = false;
       $('import-status').textContent = current ? 'Previous review retained.' : 'No run open.';
     }
+  }
+  function inlineFiles(files, label) {
+    require(Array.isArray(files) && files.length <= 5000, `Invalid ${label} file list.`);
+    return files.map(file => {
+      require(object(file) && typeof file.path === 'string' && typeof file.content === 'string',
+        `Invalid ${label} file.`);
+      return {name: file.path.split('/').pop(), webkitRelativePath: file.path,
+        size: new Blob([file.content]).size, text: async () => file.content};
+    });
   }
   function renderComparison(comparison) {
     require(object(comparison) && comparison.kind === 'paired_policy_comparison' &&
@@ -309,6 +322,13 @@
     if (event.target.files.length) importFiles(event.target.files, false);
     event.target.value = '';
   });
+  $('open-sample').addEventListener('click', () => {
+    try { importFiles(inlineFiles(window.INQUEST_SAMPLE_FILES, 'sample run'), false, true); }
+    catch (error) {
+      $('import-error').textContent = error.message;
+      $('import-error').hidden = false;
+    }
+  });
   $('run-files').addEventListener('change', event => {
     if (event.target.files.length) importFiles(event.target.files, true);
     event.target.value = '';
@@ -317,6 +337,7 @@
   $('clear').addEventListener('click', () => {
     generation++; comparisonGeneration++; current = null; sourceFiles = []; selected = null;
     $('run-review').hidden = true;
+    $('sample-context').hidden = true;
     ['episode-detail', 'episode-list', 'run-meta', 'run-stats', 'comparison-view'].forEach(id => $(id).replaceChildren());
     ['run-title', 'run-policy', 'comparison-status', 'comparison-error', 'import-error'].forEach(id => { $(id).textContent = ''; });
     $('import-status').textContent = 'No run open.'; $('import-error').hidden = true; $('comparison-error').hidden = true;
@@ -340,12 +361,7 @@
   if (embedded) {
     try {
       const files = parse(embedded.textContent, 'Local run');
-      require(Array.isArray(files) && files.length <= 5000, 'Invalid local run file list.');
-      importFiles(files.map(file => {
-        require(object(file) && typeof file.path === 'string' && typeof file.content === 'string', 'Invalid local run file.');
-        return {name: file.path.split('/').pop(), webkitRelativePath: file.path,
-          size: new Blob([file.content]).size, text: async () => file.content};
-      }), false);
+      importFiles(inlineFiles(files, 'local run'), false);
     } catch (error) {
       $('import-error').textContent = error.message; $('import-error').hidden = false;
     }

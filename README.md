@@ -15,7 +15,7 @@ Investigate an incident across eight services: follow dependencies, inspect metr
 | Component | Delivered behavior | Evidence |
 |---|---|---|
 | Browser workbench | Select a frozen or generated case; inspect telemetry; submit a diagnosis and reveal the answer | [App](app.py), [web tests](tests/test_web.py) |
-| Saved-run viewer | Open local run folders; inspect exact-attempt observations, citations, reports, errors, and saved comparisons without model calls or uploads | [Viewer guide](docs/SAVED_RUNS.md), [browser tests](browser_tests/test_saved_runs.py) |
+| Saved-run viewer | Open a public two-episode walkthrough or local run folders; inspect exact-attempt observations, citations, reports, errors, and saved comparisons without model calls or uploads | [Viewer guide](docs/SAVED_RUNS.md), [browser tests](browser_tests/test_saved_runs.py) |
 | Local browser execution | Start one offline investigation, inspect progress and budgets, cancel/resume, recover jobs and open saved results | [Local execution guide](docs/LOCAL_EXECUTION.md), [lifecycle tests](tests/test_local_jobs.py) |
 | Incident generator | Eight fault categories, one root cause, 120 minutes of telemetry, JSON serialization | [Generator](src/inquest/scenario.py), [example](examples/generate_incident.py) |
 | Frozen inputs | 120 smoke cases plus two separately versioned 16-case authored suites, provenance manifests and SHA-256 verification | [Data guide](datasets/README.md), [loader tests](tests/test_frozen.py) |
@@ -40,7 +40,7 @@ python app.py
 
 Open `http://127.0.0.1:8000`. On Windows, use `py -3.14 -m venv .venv` and `.venv\Scripts\Activate.ps1`; Windows execution has not been verified.
 
-For saved investigations, open `http://127.0.0.1:8000/runs` and choose a single run folder containing `run.json` and `episodes/`. Files stay in the browser tab; no API key or model request is needed. See [saved-run review](docs/SAVED_RUNS.md).
+For saved investigations, open `http://127.0.0.1:8000/runs` and try the public sample, or choose a single run folder containing `run.json` and `episodes/`. Files stay in the browser tab; no API key or model request is needed. See [saved-run review](docs/SAVED_RUNS.md).
 
 To **start investigations from the browser**, stop the previous server and run `python scripts/serve_local.py`, then open `http://127.0.0.1:8000/investigate`. This opt-in local service uses the free offline heuristic, durable SQLite job state, cancellation/recovery, and the existing saved-run viewer. Execution endpoints are absent from the public app. See [local execution](docs/LOCAL_EXECUTION.md).
 
