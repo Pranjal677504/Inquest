@@ -29,7 +29,7 @@ Checks exercise real frozen/generated incident requests, diagnosis submission, c
 
 These are application correctness checks. Handcrafted diagnoses and assertions against evaluator-held labels are not autonomous-agent evaluation results. The additive `evidence_relevant_success` metric is documented in [Grading](GRADING.md); it does not establish claim-level evidence support.
 
-`browser_tests/test_saved_runs.py` uses invented local run artifacts to exercise folder and incremental file imports, keyboard citation navigation, escaped untrusted text, backend failures with absent reports, unfinished episodes, missing/exact-attempt journals, mismatched identities, truncated journals, comparison rendering, mobile width, clearing and delayed import races. Every viewer test fails on JavaScript errors, post-load network requests, or nonempty browser storage. The web test checks the `/runs` route and its network-blocking Content Security Policy. These are viewer correctness checks, not model results or a cryptographic artifact audit.
+`browser_tests/test_saved_runs.py` exercises the public two-episode walkthrough and uses invented local run artifacts to test folder and incremental file imports, keyboard citation navigation, escaped untrusted text, backend failures with absent reports, unfinished episodes, missing/exact-attempt journals, mismatched identities, truncated journals, comparison rendering, mobile width, clearing and delayed import races. Every viewer test fails on JavaScript errors, post-load network requests, or nonempty browser storage. The web test checks the `/runs` route and its network-blocking Content Security Policy. These are viewer correctness checks, not model results or a cryptographic artifact audit.
 
 ## Local browser execution
 

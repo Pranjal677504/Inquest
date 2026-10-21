@@ -88,6 +88,24 @@ def open_run(page, folder):
     expect(page.locator("#import-status")).to_contain_text("Opened 3 planned episodes")
 
 
+def test_public_sample_opens_both_outcomes_and_can_be_replaced(viewer, run_folder):
+    viewer.get_by_role("button", name="Open sample investigation").click()
+    expect(viewer.locator("#import-status")).to_contain_text("Opened 2 public sample episodes")
+    expect(viewer.locator("#sample-context")).to_be_visible()
+    expect(viewer.locator("#run-stats")).to_contain_text("2 / 2")
+    expect(viewer.locator("#episode-list button")).to_have_count(2)
+    expect(viewer.locator("#episode-detail")).to_contain_text("Accepted")
+    expect(viewer.locator("#episode-detail .timeline li")).to_have_count(5)
+    viewer.locator("#episode-list button").nth(1).click()
+    expect(viewer.locator("#episode-detail")).to_contain_text("Reported, not accepted")
+    expect(viewer.locator("#episode-detail .timeline li")).to_have_count(5)
+    open_run(viewer, run_folder)
+    expect(viewer.locator("#sample-context")).to_be_hidden()
+    expect(viewer.locator("#episode-list button")).to_have_count(3)
+    viewer.locator("#clear").click()
+    expect(viewer.locator("#run-review")).to_be_hidden()
+
+
 def test_folder_citations_backend_failure_and_unfinished(viewer, run_folder):
     open_run(viewer, run_folder)
     expect(viewer.locator("#run-stats")).to_contain_text("2 / 3")

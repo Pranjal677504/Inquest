@@ -1,6 +1,12 @@
 # Review saved investigations
 
-The saved-run viewer opens existing runner artifacts locally in the browser. It makes no model calls and needs no API key, database, or additional runtime package. It does not execute repairs or regrade cases.
+The saved-run viewer opens existing runner artifacts locally in the browser. It also includes a public two-episode walkthrough. It makes no model calls and needs no API key, database, or additional runtime package. It does not execute repairs or regrade cases.
+
+## Try the public walkthrough
+
+Open `/runs` and select **Open sample investigation**. The viewer loads a curated excerpt from the [published offline baseline](../experiments/offline-baseline-v1/README.md): one accepted diagnosis and one incorrect diagnosis, each with a five-call budget. Select either episode to inspect its report, citations, observations and recorded evaluation. The example was produced by a deterministic heuristic, not a language model. Its two-episode counts describe only the excerpt and are not a performance estimate.
+
+The bundled sample is built by `python scripts/build_sample_run.py` from `experiments/offline-baseline-v1/authored-run.tar.gz` after checking its SHA-256 checksum. The builder retains the source results and journals, and narrows the manifest's job list to the selected episodes. Opening the sample makes no additional network request or upload. **Clear review** removes it from the current review; choose a folder to inspect your own run.
 
 ## Start and open a run
 
@@ -16,7 +22,7 @@ Open <http://127.0.0.1:8000/runs>, or follow **Open saved investigations** from 
 
 The viewer reads only `run.json`, per-episode `result.json`, and `attempt-NNN.jsonl` files. It ignores summary files and unrelated files, including environment files. For browsers without folder selection, use **Folder picker unavailable?** to select `run.json` first, then add an episode's result and matching journal; repeat for additional episodes.
 
-Files are read in this browser tab, without upload, network access, browser storage, or model calls. The `/runs` page has a Content Security Policy that disallows connections and external assets. It uses local styles and system fonts. Clear review or reload to discard the imported review. This is not encryption or file deletion: originals remain on disk, and browser memory is managed by the browser.
+Files are read in this browser tab, without upload, browser storage, or model calls. The `/runs` page loads its bundled public sample and other local assets on initial page load, then makes no request when opening a sample or importing files. Its Content Security Policy disallows connections and external assets. It uses local styles and system fonts. Clear review or reload to discard the imported review. This is not encryption or file deletion: originals remain on disk, and browser memory is managed by the browser.
 
 ## What to inspect
 
@@ -42,7 +48,7 @@ python -m inquest compare \
 
 Then choose that JSON under **Inspect a saved comparison**. The viewer displays saved group counts, evidence successes, percentage-point changes, per-case outcomes, usage, operational differences and limitations. It does not infer compatibility or claim to have rerun the CLI checks. Imported comparison files can also be edited externally; treat them as saved claims until verified.
 
-No live model call is needed for either workflow. Keep run artifacts private unless you intentionally review and publish them. The viewer does not bundle maintainer transcripts, API keys, or evaluation outcomes in its source.
+No live model call is needed for either workflow. Keep run artifacts private unless you intentionally review and publish them. The viewer bundles only the already published offline sample; it does not bundle private maintainer runs or API keys.
 
 ## Development workflow
 

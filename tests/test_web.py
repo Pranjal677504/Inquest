@@ -10,9 +10,11 @@ def test_saved_run_viewer_is_served_with_no_network_policy():
     response = client.get("/runs")
     assert response.status_code == 200
     assert b"Choose run folder" in response.data
+    assert b"Open sample investigation" in response.data
     assert "connect-src 'none'" in response.headers["Content-Security-Policy"]
     assert b"Open saved investigations" in client.get("/").data
     assert client.get("/assets/runs.js").status_code == 200
+    assert client.get("/assets/sample-run.js").status_code == 200
     assert client.get("/assets/runs.css").status_code == 200
 
 

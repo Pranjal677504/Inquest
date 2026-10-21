@@ -7,12 +7,17 @@
   <title>Inquest — Saved investigations</title>
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/runs.css">
+  <script src="/assets/sample-run.js" defer></script>
   <script src="/assets/runs.js" defer></script>
 </head>
 <body>
   <header class="masthead"><a class="wordmark" href="/">INQUEST<span>.</span></a><nav aria-label="Main"><a href="/">Incident workbench</a><a href="/runs" aria-current="page">Saved investigations</a></nav><span class="private-label">LOCAL FILES · NO MODEL CALLS</span></header>
   <main>
     <section class="hero"><p class="eyebrow">INVESTIGATION REVIEW / 01</p><h1>Follow the evidence.</h1><p>Open a saved run to inspect what the agent observed, what it concluded, and where it failed.</p></section>
+    <section class="sample-panel" aria-label="Try a sample investigation">
+      <div><p class="eyebrow">START HERE</p><h2>Explore a recorded investigation</h2><p>See two five-call episodes from the published offline baseline: one accepted diagnosis and one incorrect diagnosis. This is a curated excerpt from a deterministic, non-LLM run, not a performance result.</p></div>
+      <button id="open-sample" class="button primary" type="button">Open sample investigation</button>
+    </section>
     <section class="import-panel" aria-label="Open saved files">
       <div><h2>Open a run folder</h2><p>Select one folder inside <code>runs/</code> containing <code>run.json</code> and <code>episodes/</code>. Extract archives first. Files stay in this tab’s memory; reloading clears them.</p></div>
       <div class="import-actions"><label class="button primary" for="run-folder">Choose run folder</label><input id="run-folder" class="file-input" type="file" webkitdirectory multiple><button id="clear" type="button">Clear review</button></div>
@@ -22,6 +27,7 @@
     <div id="import-error" class="notice error" role="alert" hidden></div>
     <section id="run-review" hidden>
       <div class="run-heading"><div><p class="eyebrow">SAVED RUN</p><h2 id="run-title"></h2></div><span id="run-policy" class="pill"></span></div>
+      <p id="sample-context" class="notice" hidden>Public walkthrough excerpt: these two episodes were selected from the <a href="https://github.com/Pranjal677504/Inquest/tree/main/experiments/offline-baseline-v1">published offline heuristic baseline</a>. The counts below describe only this excerpt. It contains one accepted and one incorrect diagnosis; neither is a model accuracy claim.</p>
       <div id="run-meta" class="metadata"></div>
       <div id="run-stats" class="stats" aria-label="Run outcomes"></div>
       <p class="notice">These are recorded grades on synthetic cases, not a new evaluation or proof of causal support. Coarse evidence relevance is a separate measure. Missing results stay unfinished.</p>

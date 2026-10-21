@@ -103,11 +103,32 @@ p {
   color:var(--muted);
   max-width:700px;
 }
-.import-panel,.comparison-panel {
+.import-panel,.comparison-panel,.sample-panel {
   border:1px solid var(--line);
   background:white;
   padding:26px;
   border-radius:10px;
+}
+.sample-panel {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:24px;
+  margin-bottom:16px;
+  background:#e7eee6;
+  border-color:#bdd2c3;
+}
+.sample-panel .eyebrow {
+  margin:0 0 6px;
+}
+.sample-panel p:last-child {
+  max-width:700px;
+  margin-bottom:0;
+  color:var(--muted);
+  font-size:14px;
+}
+.sample-panel .button {
+  flex:none;
 }
 .import-panel {
   display:grid;
@@ -445,8 +466,12 @@ footer {
   #episode-detail {
     padding:17px;
   }
-  .import-panel,.comparison-panel {
+  .import-panel,.comparison-panel,.sample-panel {
     padding:18px;
+  }
+  .sample-panel {
+    align-items:stretch;
+    flex-direction:column;
   }
   .facts {
     grid-template-columns:110px minmax(0,1fr);
