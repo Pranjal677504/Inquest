@@ -140,7 +140,7 @@
     const {manifest, entries, name} = current;
     $('run-review').hidden = false;
     $('run-title').textContent = name;
-    $('run-policy').textContent = `Policy ${display(manifest.config.episode_options?.policy)}`;
+    $('run-policy').textContent = `Policy ${display(manifest.config.episode_options?.policy ?? manifest.config.backend?.policy)}`;
     $('run-meta').replaceChildren();
     const backend = manifest.config.backend || {}, suite = manifest.config.suite || {};
     $('run-meta').append(node('div', `${display(suite.suite_id)} / ${display(suite.set_name)} · ${display(backend.requested_model || backend.kind)}`),

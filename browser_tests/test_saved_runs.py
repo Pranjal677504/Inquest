@@ -91,6 +91,7 @@ def open_run(page, folder):
 def test_public_sample_opens_both_outcomes_and_can_be_replaced(viewer, run_folder):
     viewer.get_by_role("button", name="Open sample investigation").click()
     expect(viewer.locator("#import-status")).to_contain_text("Opened 2 public sample episodes")
+    expect(viewer.locator("#run-policy")).to_have_text("Policy earliest-alert-v1")
     expect(viewer.locator("#sample-context")).to_be_visible()
     expect(viewer.locator("#run-stats")).to_contain_text("2 / 2")
     expect(viewer.locator("#episode-list button")).to_have_count(2)
