@@ -8,7 +8,7 @@
 
 Investigate an incident across eight services: follow dependencies, inspect metrics and logs, compare recent changes, and submit a diagnosis. The browser demo works without an API key. The Python toolkit exposes the same incident data through budgeted tools and grades reports against evaluator-held labels.
 
-**Status:** incident construction, the browser workbench, frozen loading, budgeted tools, and report grading work today. The recorded single-agent runner supports versioned policies, offline paired comparisons, and resumable model evaluations. V1/V2 prompts are preserved; [V3](docs/POLICY_V3.md) remains an experimental guidance candidate. V2 is the working evaluation baseline; the launcher default remains V1. A fitted reasoner remains future work. This is an early evaluation toolkit, not a validated production benchmark.
+**Status:** incident construction, the browser workbench, frozen loading, budgeted tools, and report grading work today. The recorded single-agent runner supports versioned policies, offline paired comparisons, and resumable model evaluations. V2 is the working evaluation baseline: it followed review of V1 failures and was frozen before authored-v2 was prepared. Both authored suites informed [V3](docs/POLICY_V3.md), which remains experimental. The CLI keeps V1 as its default to preserve existing invocation behavior; pass `--policy v2` explicitly for baseline runs. A fitted reasoner remains future work. This is an early evaluation toolkit, not a validated production benchmark.
 
 ## What you can run
 
@@ -59,7 +59,7 @@ For Chromium workflow checks and their separate optional dependencies, see [Test
 
 **Dependencies:** the generator, loader, tools, and grader use the Python standard library. Installing the distribution also installs **Flask**, which runs the bundled web application. Tests use pytest. The browser workbench and offline heuristic require no model or provider key. Local browser execution uses Python's bundled SQLite, with no database server. Hosted model runs need a configured provider; local model runs need a model server and suitable compute.
 
-**Python support and verification:** Python **3.10–3.14** and the Chromium browser workflows passed on Linux in [the local-execution CI run](https://github.com/Pranjal677504/Inquest/actions/runs/39384617188). Local verification passed **473 Python tests and 17 Chromium browser workflows**. Manual macOS checks covered browser-started offline investigation, saved reports, tool observations, and result access after restarting the server. Package metadata requires Python 3.10+; Windows execution remains unverified. [CI](https://github.com/Pranjal677504/Inquest/actions/workflows/tests.yml) checks pull requests and updates to `main`. The hosted demo selects Python 3.14 in [`.python-version`](.python-version).
+**Python support and verification:** The [latest `main` CI run](https://github.com/Pranjal677504/Inquest/actions/runs/39608169385) passed the Python **3.10–3.14** matrix and Chromium browser workflows on Linux. The local-execution snapshot passed **473 Python tests and 17 Chromium browser workflows** locally. Manual macOS checks covered browser-started offline investigation, saved reports, tool observations, and result access after restarting the server. Package metadata requires Python 3.10+; Windows execution remains unverified. [CI](https://github.com/Pranjal677504/Inquest/actions/workflows/tests.yml) checks pull requests and updates to `main`. The hosted demo selects Python 3.14 in [`.python-version`](.python-version).
 
 ## Run a recorded investigation
 
@@ -120,7 +120,7 @@ Replayability is established practice in incident benchmarks. [Cloud-OpsBench, O
 
 Inquest's proposed experiments ask whether **information-gain probe selection**, **confidence calibration**, and **success under equal investigation budgets** improve over simpler policies. Those are questions to test, not demonstrated advantages or claims of novelty. The [design notes](docs/DESIGN.md) explain the proposed belief model and its assumptions.
 
-Next priorities are a browser investigation viewer, connection to local execution, and transparent evidence/error/comparison displays. Independent case review and separate assessment data remain necessary for generalization claims. Both authored suites informed V3. The full structured-agent comparison still depends on implementing and validating the reasoner. [Acceptance criteria and prerequisites](docs/ROADMAP.md) define what must exist before results can be claimed.
+Next priorities are a reproducible release walkthrough and checklist, claim-level evidence support, and independently reviewed assessment cases. The saved-run viewer, public sample, and opt-in local execution are delivered. Interactive pairing of saved runs, topology variation, and a fitted reasoner remain future work. [Acceptance criteria and prerequisites](docs/ROADMAP.md) define the evidence needed before broader results can be claimed.
 
 ## Repository guide
 

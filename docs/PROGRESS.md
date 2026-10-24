@@ -1,6 +1,6 @@
 # Project progress
 
-Updated 2026-10-20. This page consolidates implementation status and the workflow for privately reviewed maintainer-supplied runs. The saved-run viewer baseline was merged by the maintainer at `5e4edda3e4415cbfad7e65c43d9a8509844ae639` (PR #6). The subsequent local-execution update is prepared as a patch for maintainer review and application through VS Code; the assistant performs no GitHub mutation.
+Updated 2026-10-24. This page consolidates implementation status and the workflow for privately reviewed maintainer-supplied runs. The saved-run viewer (PR #6), local execution (PR #7), hosted `/runs` routing (PR #9), and public sample walkthrough (PR #10) are merged on `main`. GitHub publication remains maintainer-controlled.
 
 ## Product goal
 
@@ -26,7 +26,7 @@ The V3 implementation passed **453 Python tests locally**. The subsequent merged
 
 The saved-run viewer update passed **454 Python tests and 12 Chromium workflows locally** on Linux/Python 3.12 with Playwright 1.55. Desktop and mobile layouts were inspected. Four maintainer-supplied saved-run folders opened successfully and all 64 episodes were inspected without network requests; no private run content is bundled with the viewer. The maintainer merged it through VS Code as PR #6. [Viewer usage](SAVED_RUNS.md) covers local startup and import limits.
 
-The local-execution update passed **473 Python tests and 17 Chromium workflows locally** on Linux/Python 3.12 with Playwright 1.55. The actual launch script completed a browser-created offline job, retained it after restart and opened its saved result. Cancellation/recovery, completed-result reuse, lost-response deduplication, shutdown, identity restrictions and default hosted-route isolation are tested. Local browser execution is not a live model result. Its PR/CI verification remains for the maintainer's VS Code workflow. See [Local execution](LOCAL_EXECUTION.md).
+The local-execution update passed **473 Python tests and 17 Chromium workflows locally** on Linux/Python 3.12 with Playwright 1.55. The launch script completed a browser-created offline job, retained it after restart and opened its saved result. Cancellation/recovery, completed-result reuse, lost-response deduplication, shutdown, identity restrictions and hosted-route isolation are tested. It merged in [PR #7](https://github.com/Pranjal677504/Inquest/pull/7), with successful pull-request and `main` CI. Local browser execution is not a live model result. See [Local execution](LOCAL_EXECUTION.md).
 
 ## Evaluation records and review status
 
@@ -41,7 +41,7 @@ Detailed run outcomes and transcripts remain in maintainer-controlled archives a
 | authored-v2 / V2 | `runs/gemini-3-5-authored-v2-budget5-policy-v2` |
 | authored-v2 / V3 | `runs/gemini-3-5-authored-v2-budget5-policy-v3` |
 
-Retain all completed outcomes, including backend failures, rather than replacing failed cases to improve a summary. The working evaluation baseline remains V2; V3 stays experimental. The launcher default remains V1, so these are explicit selection decisions rather than a default-setting change.
+Retain all completed outcomes, including backend failures, rather than replacing failed cases to improve a summary. V2 is the working evaluation baseline because it followed review of V1 failures and its prompt was frozen before authored-v2 was prepared. The CLI keeps V1 as its default to preserve existing invocation behavior and run configurations; select `--policy v2` explicitly for baseline runs. Both authored suites informed V3, so it remains experimental.
 
 Review summaries carefully: the `invalid_reports` counter includes absent reports after backend failures. It must not automatically be described as a count of malformed submitted reports. Distinguish provider-response errors, retried transport failures, malformed intermediate actions, incorrect diagnoses, and invalid submitted reports. Available Brier/usage values and missingness must be reported together. A response rejected as `provider_response_missing_content` lacked the expected text field; without its raw body the exact response shape cannot be inferred.
 
@@ -49,7 +49,7 @@ Review summaries carefully: the `invalid_reports` counter includes absent report
 
 Demand checks, caller evidence, mechanism classification and handling contradictory observations remain targets for improvement. A correct label or a positive coarse relevance score does not establish complete causal support. Changed instructions are an experiment; they do not guarantee model compliance. No hidden answer repair, probe injection, confidence clipping or automatic promotion is used.
 
-Use reviewed paired outcomes to decide whether a candidate should replace a baseline. A single remote-model run does not isolate prompt wording from sampling or changes behind a model alias. Preserve failed candidates as engineering evidence. The next work is the offline product interface rather than another immediate model run.
+Use reviewed paired outcomes to decide whether a candidate should replace a baseline. A single remote-model run does not isolate prompt wording from sampling or changes behind a model alias. Preserve failed candidates as engineering evidence. The next product work is a reproducible walkthrough and release checklist, followed by claim-level evidence support and independent assessment.
 
 ## Interpretation boundaries
 
@@ -57,11 +57,11 @@ Both authored suites informed V3 development. They are development data for V3. 
 
 ## Next product milestone
 
-1. Keep V2 as the working evaluation baseline and retain V3 as a recorded experiment. Keep the current launcher default documented separately: it remains V1, not V2.
-2. The browser saved-run viewer is merged: tool timeline, actual evidence citations, final report, validation errors and provider errors. Reading a completed run requires no model request.
-3. Local execution is implemented in the prepared patch, using the offline heuristic and existing runner artifacts. Validate and publish it through VS Code. Hosted/model execution from the browser remains a separate future capability.
-4. The viewer can display saved CLI comparison artifacts with counts, per-case outcomes, usage and limitations. Direct selection and verified pairing of two folders inside the browser remain future work; compatibility validation stays in the CLI.
-5. Prepare a reproducible walkthrough and release checklist, then prioritize claim-level evidence support and independently reviewed assessment/topology variation. A fitted reasoner and calibration remain separate research work.
+1. Keep V2 as the working evaluation baseline and V3 as a recorded experiment. The CLI default remains V1 for existing commands; use `--policy v2` explicitly when running the baseline.
+2. The saved-run viewer (PR #6), opt-in offline local execution (PR #7), and public sample walkthrough (PR #10) are merged. Completed runs can be reviewed without a model request.
+3. Prepare a reproducible walkthrough and release checklist covering fresh-checkout setup, the public sample, a local offline job, saved-result review, and hosted route checks. Browser-started model execution remains a separate future capability.
+4. The viewer displays saved CLI comparison artifacts with counts, per-case outcomes, usage and limitations. Direct selection and verified pairing of two folders in the browser remain future work; compatibility validation stays in the CLI.
+5. Prioritize claim-level evidence support and independently reviewed assessment cases, then topology variation. A fitted reasoner and calibration remain separate research work.
 
 No further live model run is required for this offline product work. Future experiments should preserve all outcomes, distinguish provider failures from diagnosis failures, and state whether their cases informed development.
 
@@ -74,4 +74,4 @@ No further live model run is required for this offline product work. Future expe
 - [Evidence coverage](EVIDENCE_COVERAGE.md): coarse relevance and historical metadata limitations.
 - [Testing](TESTING.md): behavior and browser checks.
 
-GitHub commits, pushes, PR changes and merges are handled by the maintainer from VS Code. Prepared local files/patches should be reviewed before publication. Raw run archives are not included in this documentation patch.
+GitHub commits, pushes, PR changes and merges are handled by the maintainer from VS Code. Private raw run archives are not published by these status documents.
