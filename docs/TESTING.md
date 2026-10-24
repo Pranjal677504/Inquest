@@ -37,7 +37,7 @@ These are application correctness checks. Handcrafted diagnoses and assertions a
 
 `browser_tests/test_local_execution.py` follows the browser → local HTTP API → SQLite worker → durable journal/result → saved viewer flow. Checks include live observations with controlled execution gates, cancellation/resume, page reload, HTTP server restart and token reconnection, lost start responses with idempotent retry, execution failures and mobile width. Requests must stay on the loopback origin, browser storage stays empty, and JavaScript errors fail the tests. Gates and scripted failures verify lifecycle behavior, not model accuracy.
 
-The local-execution snapshot passed 473 Python tests and 17 Chromium workflows locally on Linux/Python 3.12, Playwright 1.55. The actual launch script was checked separately with a background worker, browser-created investigation, restart persistence and direct saved-run review. Hosted CI must run on the maintainer's PR before merge. No live model call is part of these checks.
+The local-execution snapshot passed 473 Python tests and 17 Chromium workflows locally on Linux/Python 3.12, Playwright 1.55. The launch script was checked separately with a background worker, browser-created investigation, restart persistence and direct saved-run review. Local execution merged in [PR #7](https://github.com/Pranjal677504/Inquest/pull/7), and the [2026-10-21 `main` CI run](https://github.com/Pranjal677504/Inquest/actions/runs/39608169385) passed all six jobs. These browser checks run against local Flask, not the hosted Vercel routes; no live model call is part of them.
 
 ## Authored causal fixtures
 
