@@ -178,6 +178,12 @@ Verification passed 473 Python tests and 17 Chromium workflows locally on Linux/
 
 The maintainer alone handles commits, pushes, PR creation and merging through VS Code. This change is delivered as an incremental patch against the merged saved-run viewer; no GitHub write is performed by the assistant. Browser model integration, claim-level support, independent review, topology variation and a reproducible release remain later work.
 
+## 2026-10-25 — Benchmark card
+
+Added [the benchmark card](BENCHMARK_CARD.md) covering intended use, frozen suites, evaluation boundaries, grading metrics and missingness, V2 baseline versus the V1 CLI default, reproducible comparisons, and limitations. Linked it from the README and updated progress/roadmap status; changelog and versioned release remain pending.
+
+Verification: dataset counts and provenance checked against manifests and suite guides, metrics against grader/runner source, and policy/heuristic distinctions against source. Relative links and whitespace checked. No runtime code or model results changed; runtime tests were not rerun.
+
 ## Reading the dated entries
 
 Entries use the date on which work occurred. Multiple changes on one day appear together. Each entry identifies the affected milestone, origin of integrated components, verification evidence, limitations, and next planned capability.

@@ -2,7 +2,7 @@
 
 **A working incident workbench and evaluation toolkit for microservice root-cause investigation.**
 
-[Try the workbench](https://inquestbench.vercel.app) · [Tool API](docs/TOOLS.md) · [Grading](docs/GRADING.md) · [Frozen data](datasets/README.md) · [Related work](docs/RELATED_WORK.md) · [Roadmap](docs/ROADMAP.md) · [Release checklist](docs/RELEASE_CHECKLIST.md)
+[Try the workbench](https://inquestbench.vercel.app) · [Benchmark card](docs/BENCHMARK_CARD.md) · [Tool API](docs/TOOLS.md) · [Grading](docs/GRADING.md) · [Frozen data](datasets/README.md) · [Related work](docs/RELATED_WORK.md) · [Roadmap](docs/ROADMAP.md) · [Release checklist](docs/RELEASE_CHECKLIST.md)
 
 [Project progress](docs/PROGRESS.md) consolidates completed capabilities, reviewed experiments, known limitations and the next product milestone.
 
@@ -120,7 +120,7 @@ Replayability is established practice in incident benchmarks. [Cloud-OpsBench, O
 
 Inquest's proposed experiments ask whether **information-gain probe selection**, **confidence calibration**, and **success under equal investigation budgets** improve over simpler policies. Those are questions to test, not demonstrated advantages or claims of novelty. The [design notes](docs/DESIGN.md) explain the proposed belief model and its assumptions.
 
-The [fresh-checkout release walkthrough](docs/releases/2026-10-25/README.md) passed for candidate `6eaa023`. Next priorities are the benchmark card, changelog and versioned release, claim-level evidence support, and independently reviewed assessment cases. The saved-run viewer, public sample, and opt-in local execution are delivered. Interactive pairing of saved runs, topology variation, and a fitted reasoner remain future work. [Acceptance criteria and prerequisites](docs/ROADMAP.md) define the evidence needed before broader results can be claimed.
+The [fresh-checkout release walkthrough](docs/releases/2026-10-25/README.md) passed for candidate `6eaa023`. The [benchmark card](docs/BENCHMARK_CARD.md) documents intended use, datasets, metrics and limitations. Next priorities are the changelog and versioned release, claim-level evidence support, and independently reviewed assessment cases. The saved-run viewer, public sample, and opt-in local execution are delivered. Interactive pairing of saved runs, topology variation, and a fitted reasoner remain future work. [Acceptance criteria and prerequisites](docs/ROADMAP.md) define the evidence needed before broader results can be claimed.
 
 ## Repository guide
 
