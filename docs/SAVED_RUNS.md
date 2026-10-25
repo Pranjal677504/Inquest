@@ -52,6 +52,6 @@ No live model call is needed for either workflow. Keep run artifacts private unl
 
 ## Development workflow
 
-Keep V2 as the current working evaluation baseline; V3 remains experimental and the launcher default remains V1. This viewer changes neither prompts, runner, grader nor datasets. Local execution controls remain a later milestone.
+Keep V2 as the current working evaluation baseline; V3 remains experimental and the launcher default remains V1. This viewer changes neither prompts, runner, grader nor datasets. Opt-in local execution is available through `python scripts/serve_local.py`; see [Local execution](LOCAL_EXECUTION.md).
 
 The maintainer reviews the patch, commits, pushes and merges through VS Code. Browser coverage is described in [Testing](TESTING.md).

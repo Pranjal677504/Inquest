@@ -2,7 +2,7 @@
 
 **A working incident workbench and evaluation toolkit for microservice root-cause investigation.**
 
-[Try the workbench](https://inquestbench.vercel.app) · [Tool API](docs/TOOLS.md) · [Grading](docs/GRADING.md) · [Frozen data](datasets/README.md) · [Related work](docs/RELATED_WORK.md) · [Roadmap](docs/ROADMAP.md)
+[Try the workbench](https://inquestbench.vercel.app) · [Tool API](docs/TOOLS.md) · [Grading](docs/GRADING.md) · [Frozen data](datasets/README.md) · [Related work](docs/RELATED_WORK.md) · [Roadmap](docs/ROADMAP.md) · [Release checklist](docs/RELEASE_CHECKLIST.md)
 
 [Project progress](docs/PROGRESS.md) consolidates completed capabilities, reviewed experiments, known limitations and the next product milestone.
 
@@ -59,7 +59,7 @@ For Chromium workflow checks and their separate optional dependencies, see [Test
 
 **Dependencies:** the generator, loader, tools, and grader use the Python standard library. Installing the distribution also installs **Flask**, which runs the bundled web application. Tests use pytest. The browser workbench and offline heuristic require no model or provider key. Local browser execution uses Python's bundled SQLite, with no database server. Hosted model runs need a configured provider; local model runs need a model server and suitable compute.
 
-**Python support and verification:** The [latest `main` CI run](https://github.com/Pranjal677504/Inquest/actions/runs/39608169385) passed the Python **3.10–3.14** matrix and Chromium browser workflows on Linux. The local-execution snapshot passed **473 Python tests and 17 Chromium browser workflows** locally. Manual macOS checks covered browser-started offline investigation, saved reports, tool observations, and result access after restarting the server. Package metadata requires Python 3.10+; Windows execution remains unverified. [CI](https://github.com/Pranjal677504/Inquest/actions/workflows/tests.yml) checks pull requests and updates to `main`. The hosted demo selects Python 3.14 in [`.python-version`](.python-version).
+**Python support and verification:** The [post-merge `main` CI run](https://github.com/Pranjal677504/Inquest/actions/runs/40069978593) passed the Python **3.10–3.14** matrix and Chromium browser workflows on Linux. The local-execution snapshot passed **473 Python tests and 17 Chromium browser workflows** locally. Manual macOS checks covered browser-started offline investigation, saved reports, tool observations, and result access after restarting the server. Package metadata requires Python 3.10+; Windows execution remains unverified. [CI](https://github.com/Pranjal677504/Inquest/actions/workflows/tests.yml) checks pull requests and updates to `main`. The hosted demo selects Python 3.14 in [`.python-version`](.python-version).
 
 ## Run a recorded investigation
 
@@ -120,7 +120,7 @@ Replayability is established practice in incident benchmarks. [Cloud-OpsBench, O
 
 Inquest's proposed experiments ask whether **information-gain probe selection**, **confidence calibration**, and **success under equal investigation budgets** improve over simpler policies. Those are questions to test, not demonstrated advantages or claims of novelty. The [design notes](docs/DESIGN.md) explain the proposed belief model and its assumptions.
 
-Next priorities are a reproducible release walkthrough and checklist, claim-level evidence support, and independently reviewed assessment cases. The saved-run viewer, public sample, and opt-in local execution are delivered. Interactive pairing of saved runs, topology variation, and a fitted reasoner remain future work. [Acceptance criteria and prerequisites](docs/ROADMAP.md) define the evidence needed before broader results can be claimed.
+Next priorities are verifying the [release walkthrough and checklist](docs/RELEASE_CHECKLIST.md) from a fresh checkout, claim-level evidence support, and independently reviewed assessment cases. The saved-run viewer, public sample, and opt-in local execution are delivered. Interactive pairing of saved runs, topology variation, and a fitted reasoner remain future work. [Acceptance criteria and prerequisites](docs/ROADMAP.md) define the evidence needed before broader results can be claimed.
 
 ## Repository guide
 
@@ -128,7 +128,7 @@ Next priorities are a reproducible release walkthrough and checklist, claim-leve
 |---|---|
 | [`src/inquest/`](src/inquest) | Generator, topology, frozen loader, tools, and grader |
 | [`app.py`](app.py), [`public/`](public) | Flask API and browser assets |
-| [`examples/`](examples) | Four runnable API demonstrations |
+| [`examples/`](examples) | Five runnable API demonstrations |
 | [`tests/`](tests), [CI workflow](.github/workflows/tests.yml) | Behavior checks, data integrity, and Python compatibility |
 | [`datasets/`](datasets) | Versioned frozen cases and provenance |
 | [`docs/`](docs) | Contracts, design rationale, related work, roadmap, and dated verification |
