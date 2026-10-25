@@ -49,7 +49,7 @@ Review summaries carefully: the `invalid_reports` counter includes absent report
 
 Demand checks, caller evidence, mechanism classification and handling contradictory observations remain targets for improvement. A correct label or a positive coarse relevance score does not establish complete causal support. Changed instructions are an experiment; they do not guarantee model compliance. No hidden answer repair, probe injection, confidence clipping or automatic promotion is used.
 
-Use reviewed paired outcomes to decide whether a candidate should replace a baseline. A single remote-model run does not isolate prompt wording from sampling or changes behind a model alias. Preserve failed candidates as engineering evidence. The next product work is verifying the [release walkthrough and checklist](RELEASE_CHECKLIST.md), followed by claim-level evidence support and independent assessment.
+Use reviewed paired outcomes to decide whether a candidate should replace a baseline. A single remote-model run does not isolate prompt wording from sampling or changes behind a model alias. Preserve failed candidates as engineering evidence. The [release walkthrough](releases/2026-10-25/README.md) passed for candidate `6eaa023`. The next product work is the benchmark card, changelog and versioned release, followed by claim-level evidence support and independent assessment.
 
 ## Interpretation boundaries
 
@@ -59,7 +59,7 @@ Both authored suites informed V3 development. They are development data for V3. 
 
 1. Keep V2 as the working evaluation baseline and V3 as a recorded experiment. The CLI default remains V1 for existing commands; use `--policy v2` explicitly when running the baseline.
 2. The saved-run viewer (PR #6), opt-in offline local execution (PR #7), and public sample walkthrough (PR #10) are merged. Completed runs can be reviewed without a model request.
-3. Verify the [release walkthrough and checklist](RELEASE_CHECKLIST.md) from a fresh checkout, covering the public sample, a local offline job, saved-result review, and hosted route checks. Browser-started model execution remains a separate future capability.
+3. The [2026-10-25 fresh-checkout walkthrough](releases/2026-10-25/README.md) passed for candidate `6eaa023`: 473 Python tests, 18 Chromium tests, all frozen checksums, the public sample, an actual local offline job and restart, saved-result review, and hosted route checks. Prepare the benchmark card, changelog and versioned release to complete milestone 18. Browser-started model execution remains a separate future capability.
 4. The viewer displays saved CLI comparison artifacts with counts, per-case outcomes, usage and limitations. Direct selection and verified pairing of two folders in the browser remain future work; compatibility validation stays in the CLI.
 5. Prioritize claim-level evidence support and independently reviewed assessment cases, then topology variation. A fitted reasoner and calibration remain separate research work.
 

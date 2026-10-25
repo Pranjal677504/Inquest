@@ -1,5 +1,7 @@
 # Release walkthrough and checklist
 
+Latest completed walkthrough: [2026-10-25, candidate 6eaa023](releases/2026-10-25/README.md). The unchecked items below are the reusable checklist for each new candidate.
+
 Use this checklist for the replay-based workbench release. Record results for the exact commit being released; an unchecked item is not a verified release claim. Local execution is opt-in and uses the recorded offline heuristic, not a live model evaluation. V2 is the working evaluation baseline; the CLI still defaults to V1 for backward compatibility. See [Testing](TESTING.md), [Local execution](LOCAL_EXECUTION.md), and [Roadmap](ROADMAP.md).
 
 ## Record the candidate
