@@ -1,5 +1,7 @@
 # Testing
 
+For release verification across a fresh checkout, local browser execution, and hosted routes, use the [release checklist](RELEASE_CHECKLIST.md). Its checks remain open until evidence is recorded.
+
 ## Python behavior and frozen data
 
 From a checkout with Python 3.10 or newer:
