@@ -1,6 +1,6 @@
 # Testing
 
-For release verification across a fresh checkout, local browser execution, and hosted routes, use the [release checklist](RELEASE_CHECKLIST.md). Its checks remain open until evidence is recorded.
+For release verification across a fresh checkout, local browser execution, and hosted routes, use the [release checklist](RELEASE_CHECKLIST.md). The [2026-10-25 verification record](releases/2026-10-25/README.md) covers candidate `6eaa023`: 473 Python tests and 18 Chromium tests passed on macOS/Python 3.14, all frozen checksums matched, and actual launcher, restart, saved-result and hosted route checks passed. New candidates require their own evidence.
 
 ## Python behavior and frozen data
 

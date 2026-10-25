@@ -1,0 +1,24 @@
+smoke-v1
+dev-easy.jsonl: OK
+dev-hard.jsonl: OK
+dev-medium.jsonl: OK
+manifest.json: OK
+ood-easy.jsonl: OK
+ood-hard.jsonl: OK
+ood-medium.jsonl: OK
+test-easy.jsonl: OK
+test-hard.jsonl: OK
+test-medium.jsonl: OK
+
+authored-v1
+authoring.json: OK
+casebook.json: OK
+holdout.jsonl: OK
+manifest.json: OK
+
+authored-v2
+authoring.json: OK
+casebook.json: OK
+holdout.jsonl: OK
+manifest.json: OK
+

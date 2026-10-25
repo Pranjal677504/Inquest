@@ -120,7 +120,7 @@ Replayability is established practice in incident benchmarks. [Cloud-OpsBench, O
 
 Inquest's proposed experiments ask whether **information-gain probe selection**, **confidence calibration**, and **success under equal investigation budgets** improve over simpler policies. Those are questions to test, not demonstrated advantages or claims of novelty. The [design notes](docs/DESIGN.md) explain the proposed belief model and its assumptions.
 
-Next priorities are verifying the [release walkthrough and checklist](docs/RELEASE_CHECKLIST.md) from a fresh checkout, claim-level evidence support, and independently reviewed assessment cases. The saved-run viewer, public sample, and opt-in local execution are delivered. Interactive pairing of saved runs, topology variation, and a fitted reasoner remain future work. [Acceptance criteria and prerequisites](docs/ROADMAP.md) define the evidence needed before broader results can be claimed.
+The [fresh-checkout release walkthrough](docs/releases/2026-10-25/README.md) passed for candidate `6eaa023`. Next priorities are the benchmark card, changelog and versioned release, claim-level evidence support, and independently reviewed assessment cases. The saved-run viewer, public sample, and opt-in local execution are delivered. Interactive pairing of saved runs, topology variation, and a fitted reasoner remain future work. [Acceptance criteria and prerequisites](docs/ROADMAP.md) define the evidence needed before broader results can be claimed.
 
 ## Repository guide
 
