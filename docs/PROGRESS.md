@@ -1,6 +1,23 @@
 # Project progress
 
-Updated 2026-10-25. This page consolidates implementation status and the workflow for privately reviewed maintainer-supplied runs. The saved-run viewer (PR #6), local execution (PR #7), hosted `/runs` routing (PR #9), and public sample walkthrough (PR #10) are merged on `main`. GitHub publication remains maintainer-controlled.
+Updated 2026-10-26. This page consolidates implementation status and the workflow for privately reviewed maintainer-supplied runs. The saved-run viewer (PR #6), local execution (PR #7), hosted `/runs` routing (PR #9), and public sample walkthrough (PR #10) are merged on `main`. GitHub publication remains maintainer-controlled.
+
+## Published release
+
+[InquestBench v0.1.0](https://github.com/Pranjal677504/Inquest/releases/tag/v0.1.0) was published on 2026-10-26.
+The annotated tag identifies verified commit
+`0317fb07f8651c01f292537baaab19451aea3fb1`.
+
+Fresh-checkout verification passed 473 Python tests, 18 Chromium tests,
+and all 18 frozen-file checksums. GitHub Actions workflow #37 passed
+Python 3.10–3.14 and Chromium. Public sample replay, local offline
+execution, restart persistence, saved-result viewing, and hosted route
+isolation were checked. The production deployment was Ready at the
+verified commit. The release notes record this verification.
+
+The [benchmark card](BENCHMARK_CARD.md) and [changelog](../CHANGELOG.md)
+describe scope and limitations. Milestone 18 is complete for the initial
+replay-based toolkit. Research acceptance criteria remain open.
 
 ## Product goal
 
@@ -49,7 +66,7 @@ Review summaries carefully: the `invalid_reports` counter includes absent report
 
 Demand checks, caller evidence, mechanism classification and handling contradictory observations remain targets for improvement. A correct label or a positive coarse relevance score does not establish complete causal support. Changed instructions are an experiment; they do not guarantee model compliance. No hidden answer repair, probe injection, confidence clipping or automatic promotion is used.
 
-Use reviewed paired outcomes to decide whether a candidate should replace a baseline. A single remote-model run does not isolate prompt wording from sampling or changes behind a model alias. Preserve failed candidates as engineering evidence. The [release walkthrough](releases/2026-10-25/README.md) passed for candidate `6eaa023`. The [benchmark card](BENCHMARK_CARD.md) documents the evaluation contract and limitations. The next product work is the changelog and versioned release, followed by claim-level evidence support and independent assessment.
+Use reviewed paired outcomes to decide whether a candidate should replace a baseline. A single remote-model run does not isolate prompt wording from sampling or changes behind a model alias. Preserve failed candidates as engineering evidence. The [release walkthrough](releases/2026-10-25/README.md) passed for candidate `6eaa023`. The [benchmark card](BENCHMARK_CARD.md) documents the evaluation contract and limitations. The changelog and v0.1.0 release are published. Next priorities are claim-level evidence support and independent assessment.
 
 ## Interpretation boundaries
 
@@ -59,7 +76,7 @@ Both authored suites informed V3 development. They are development data for V3. 
 
 1. Keep V2 as the working evaluation baseline and V3 as a recorded experiment. The CLI default remains V1 for existing commands; use `--policy v2` explicitly when running the baseline.
 2. The saved-run viewer (PR #6), opt-in offline local execution (PR #7), and public sample walkthrough (PR #10) are merged. Completed runs can be reviewed without a model request.
-3. The [2026-10-25 fresh-checkout walkthrough](releases/2026-10-25/README.md) passed for candidate `6eaa023`: 473 Python tests, 18 Chromium tests, all frozen checksums, the public sample, an actual local offline job and restart, saved-result review, and hosted route checks. The [benchmark card](BENCHMARK_CARD.md) is written; prepare the changelog and versioned release to complete milestone 18. Browser-started model execution remains a separate future capability.
+3. [v0.1.0](https://github.com/Pranjal677504/Inquest/releases/tag/v0.1.0) completes milestone 18 for the initial replay-based toolkit. Its release notes record verification of commit `0317fb0`. Browser-started model execution remains future work.
 4. The viewer displays saved CLI comparison artifacts with counts, per-case outcomes, usage and limitations. Direct selection and verified pairing of two folders in the browser remain future work; compatibility validation stays in the CLI.
 5. Prioritize claim-level evidence support and independently reviewed assessment cases, then topology variation. A fitted reasoner and calibration remain separate research work.
 
