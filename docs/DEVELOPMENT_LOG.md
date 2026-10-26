@@ -184,6 +184,23 @@ Added [the benchmark card](BENCHMARK_CARD.md) covering intended use, frozen suit
 
 Verification: dataset counts and provenance checked against manifests and suite guides, metrics against grader/runner source, and policy/heuristic distinctions against source. Relative links and whitespace checked. No runtime code or model results changed; runtime tests were not rerun.
 
+## 2026-10-26 — Published v0.1.0
+
+Published [InquestBench v0.1.0](https://github.com/Pranjal677504/Inquest/releases/tag/v0.1.0) using annotated tag `v0.1.0`
+at commit `0317fb07f8651c01f292537baaab19451aea3fb1`.
+Fresh-checkout verification passed 473 Python tests, 18 Chromium tests,
+and 18 frozen-file checksums. Workflow #37 passed Python 3.10–3.14 and
+Chromium. Manual checks covered public replay, a completed offline job,
+restart persistence, saved-result viewing, and hosted route isolation.
+The production deployment was Ready at the verified commit.
+
+Recorded the published release in progress and roadmap documentation
+and completed milestone 18 for the initial toolkit. Independent
+assessment, claim-level evidence support, topology variation, fitted
+reasoning and calibration remain pending. These checks establish
+software behavior, not autonomous model accuracy or production readiness.
+The maintainer performed release actions through VS Code and GitHub.
+
 ## Reading the dated entries
 
 Entries use the date on which work occurred. Multiple changes on one day appear together. Each entry identifies the affected milestone, origin of integrated components, verification evidence, limitations, and next planned capability.
