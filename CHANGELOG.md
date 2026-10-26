@@ -6,6 +6,8 @@ Dated verification records identify the specific revision tested.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-26
+
 ### Added
 
 - Browser workbench for investigating synthetic microservice incidents.
